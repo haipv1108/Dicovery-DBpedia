@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    xmlns:tagview="http://schemas.android.com/apk/res-auto"
     android:id="@+id/activity_main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -9,48 +8,67 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context="com.brine.discovery.MainActivity">
+    tools:context="com.brine.discovery.activity.MainActivity">
 
-    <EditText
-        android:id="@+id/edt_search"
+    <RelativeLayout
+        android:id="@+id/search_area"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <ImageView
+            android:id="@+id/img_search_option"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_centerVertical="true"
+            android:src="@drawable/btn_search"/>
+
+        <EditText
+            android:id="@+id/edt_search"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_toRightOf="@+id/img_search_option"
+            android:layout_toLeftOf="@+id/img_search"
+            android:lines="1"
+            android:inputType="text"
+            android:imeOptions="actionDone"
+            android:textAppearance="@android:style/TextAppearance.Material.Body1"
+            android:hint="Search text"/>
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/rlt_seledted_recommend"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:lines="1"
-        android:inputType="text"
-        android:imeOptions="actionDone"
-        android:textAppearance="@android:style/TextAppearance.Material.Body1"
-        android:hint="Search text"/>
+        android:layout_below="@+id/search_area"
+        android:visibility="gone">
+
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/recycle_selected_uri"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingLeft="@dimen/_5sdp"
+            android:paddingRight="@dimen/_5sdp"
+            android:paddingTop="@dimen/_3sdp" />
+
+        <ImageButton
+            android:id="@+id/btn_EXSearch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_centerInParent="true"
+            android:background="@android:color/transparent"
+            android:src="@drawable/btn_run"/>
+
+    </RelativeLayout>
 
     <ListView
         android:id="@+id/lv_keyword_search"
-        android:layout_below="@+id/edt_search"
+        android:layout_below="@+id/search_area"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:paddingLeft="@dimen/_5sdp"
         android:paddingRight="@dimen/_5sdp"/>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/edt_search"
-        android:orientation="vertical">
-
-        <com.cunoraz.tagview.TagView
-            android:id="@+id/tag_group_uri"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="10dp"
-            tagview:lineMargin="5dp"
-            tagview:tagMargin="5dp"
-            tagview:textPaddingLeft="8dp"
-            tagview:textPaddingTop="5dp"
-            tagview:textPaddingRight="8dp"
-            tagview:textPaddingBottom="5dp"/>
-
-        <Button
-            android:id="@+id/btn_EXSearch"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="EXSearch"/>
-    </LinearLayout>
 </RelativeLayout>

@@ -32,7 +32,7 @@ public class KeywordSearch {
     }
 
     public void setThumb(String thumb){
-        this.thumb = thumb;
+        this.thumb = thumb.replace("http://", "https://");
     }
 
     public String getThumb(){

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <RelativeLayout
+        android:id="@+id/rlt_loadimage"
+        android:layout_gravity="center"
+        android:layout_width="@dimen/_90sdp"
+        android:layout_height="@dimen/_90sdp">
+
+        <ImageView
+            android:id="@+id/img_thumb"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:src="@drawable/no_image_loading"/>
+
+        <ProgressBar
+            android:id="@+id/progress_loading"
+            style="@style/GenericProgressIndicator"
+            android:layout_centerHorizontal="true"
+            android:layout_centerVertical="true"/>
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="@dimen/_3sdp">
+
+        <TextView
+            android:id="@+id/tv_uri"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone"/>
+
+        <TextView
+            android:id="@+id/tv_label"
+            android:layout_width="@dimen/_90sdp"
+            android:layout_height="wrap_content"
+            android:paddingLeft="@dimen/_2sdp"
+            android:lines="2"
+            android:textAppearance="@android:style/TextAppearance.Material.Body1" />
+
+        <TextView
+            android:id="@+id/tv_option"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentTop="true"
+            android:text="@string/tv_option"
+            android:textStyle="bold"/>
+    </RelativeLayout>
+
+
+</LinearLayout>

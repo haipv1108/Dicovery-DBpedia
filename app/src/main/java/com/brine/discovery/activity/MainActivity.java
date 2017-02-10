@@ -1,15 +1,27 @@
-package com.brine.discovery;
+package com.brine.discovery.activity;
 
+import android.app.ProgressDialog;
+import android.content.Intent;
+import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v7.widget.DividerItemDecoration;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.android.volley.AuthFailureError;
@@ -17,11 +29,14 @@ import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
+import com.brine.discovery.AppController;
+import com.brine.discovery.R;
 import com.brine.discovery.adapter.KSAdapter;
+import com.brine.discovery.adapter.SelectedResultsAdapter;
 import com.brine.discovery.model.KeywordSearch;
+import com.brine.discovery.model.Recommend;
 import com.brine.discovery.util.Utils;
 import com.cunoraz.tagview.Tag;
-import com.cunoraz.tagview.TagView;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -48,79 +63,117 @@ import javax.xml.parsers.ParserConfigurationException;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener{
     private static final String TAG = MainActivity.class.getCanonicalName();
+    public static final String DATASEACH = "exsearch";
 
     private EditText mEdtSearch;
-    private ListView mKSListview;
-    private TagView mTagGroup;
-    private Button mBtnEXSearch;
+    private ListView mListviewKS;
+    private RecyclerView mRecycleRecommed;
+    private ImageButton mBtnEXSearch;
+    private RelativeLayout mRltSelectedRecommend;
 
     private KSAdapter mKSAdapter;
+    private SelectedResultsAdapter mRecommedAdapter;
     private List<KeywordSearch> mKeywordSearchs;
     private List<String> mInputURIs;
+    private List<Recommend> mSelectedRecommends;
+    private ProgressDialog mProgressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
         initUI();
         init();
         listeningEdtSearch();
     }
 
     private void initUI(){
-        getSupportActionBar().hide();
         mEdtSearch = (EditText) findViewById(R.id.edt_search);
-        mKSListview = (ListView) findViewById(R.id.lv_keyword_search);
-        mTagGroup = (TagView) findViewById(R.id.tag_group_uri);
-        mBtnEXSearch = (Button) findViewById(R.id.btn_EXSearch);
+        mListviewKS = (ListView) findViewById(R.id.lv_keyword_search);
+        mRecycleRecommed = (RecyclerView) findViewById(R.id.recycle_selected_uri);
+        mBtnEXSearch = (ImageButton) findViewById(R.id.btn_EXSearch);
         mBtnEXSearch.setOnClickListener(this);
+        mRltSelectedRecommend = (RelativeLayout) findViewById(R.id.rlt_seledted_recommend);
+    }
+
+    private void hideSelectedRecommend(){
+        mListviewKS.setVisibility(View.VISIBLE);
+        mRltSelectedRecommend.setVisibility(View.GONE);
+    }
+
+    private void showSelectedRecommend(){
+        mListviewKS.setVisibility(View.GONE);
+        mRltSelectedRecommend.setVisibility(View.VISIBLE);
     }
 
     private void init(){
         mKeywordSearchs = new ArrayList<>();
         mInputURIs = new ArrayList<>();
+        mSelectedRecommends = new ArrayList<>();
+
         mKSAdapter = new KSAdapter(this, mKeywordSearchs);
-        mKSListview.setAdapter(mKSAdapter);
+        mListviewKS.setAdapter(mKSAdapter);
+
+        mRecommedAdapter = new SelectedResultsAdapter(this, mSelectedRecommends);
+        mRecycleRecommed.setHasFixedSize(true);
+        RecyclerView.LayoutManager layoutManagerRecommend =
+                new LinearLayoutManager(getApplicationContext(),
+                        LinearLayoutManager.HORIZONTAL, false);
+        mRecycleRecommed.setLayoutManager(layoutManagerRecommend);
+        mRecycleRecommed.addItemDecoration(
+                new DividerItemDecoration(this, LinearLayout.HORIZONTAL));
+        mRecycleRecommed.setItemAnimator(new DefaultItemAnimator());
+        mRecycleRecommed.setAdapter(mRecommedAdapter);
     }
 
     @Override
     public void onClick(View view) {
         switch (view.getId()){
             case R.id.btn_EXSearch:
-                showLog("INPUT URI: " + mInputURIs.toString());
-                if(mInputURIs.size() == 0){
+                if(mSelectedRecommends.size() == 0){
                     showLogAndToast("Please select uri!");
                     return;
                 }
-                StringRequest request = new StringRequest(Request.Method.POST,
-                        "http://api.discoveryhub.co/recommendations", new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        showLogAndToast(response);
-                        parseJsonRecommendation(response);
-                    }
-                }, new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-
-                    }
-                }){
-                    @Override
-                    protected Map<String, String> getParams() throws AuthFailureError {
-                        Map<String, String> params = new HashMap<>();
-                        for(String node : mInputURIs){
-                            params.put("nodes[]", node);
-                        }
-                        return params;
-                    }
-                };
-                AppController.getInstance().addToRequestQueue(request, "EXSearch");
+                List<String> inputUris = new ArrayList<>();
+                for(Recommend node : mSelectedRecommends){
+                    inputUris.add(node.getUri());
+                }
+                EXSearch(inputUris);
                 break;
         }
     }
 
-    private void parseJsonRecommendation(String response){
+    private void EXSearch(final List<String> recommends){
+        mProgressDialog = new ProgressDialog(this);
+        mProgressDialog.setMessage("Loading...");
+        mProgressDialog.show();
+
+        StringRequest request = new StringRequest(Request.Method.POST,
+                "http://api.discoveryhub.co/recommendations", new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                parserPostDataRecommend(response);
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+
+            }
+        }){
+            @Override
+            protected Map<String, String> getParams() throws AuthFailureError {
+                Map<String, String> params = new HashMap<>();
+                for(String uri: recommends){
+                    params.put("nodes[]", uri);
+                }
+                showLog("params: " + params.toString());
+                return params;
+            }
+        };
+        AppController.getInstance().addToRequestQueue(request, "EXSearch");
+    }
+
+    private void parserPostDataRecommend(String response){
         if(response == null) return;
         try {
             JSONObject json = new JSONObject(response);
@@ -140,15 +193,33 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         StringRequest request = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
             @Override
             public void onResponse(String response) {
-                showLogAndToast(response);
+                mProgressDialog.dismiss();
+                try {
+                    JSONArray jsonArray = new JSONArray(response);
+                    if(jsonArray.length() == 1 &&
+                            jsonArray.getJSONObject(0).getJSONArray("results").length() == 1){
+                        showLogAndToast("No results. Try again!");
+                    }else{
+                        showResultRecommendation(response);
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
             }
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                //TODO:
+                mProgressDialog.dismiss();
             }
         });
         AppController.getInstance().addToRequestQueue(request, "recommendation");
+    }
+
+    private void showResultRecommendation(String response){
+        Intent intent = new Intent(MainActivity.this, RecommendActivity.class);
+        intent.putExtra(RecommendActivity.KEY, response);
+//        finish();
+        startActivity(intent);
     }
 
     private void listeningEdtSearch(){
@@ -162,21 +233,36 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
 
             @Override
-            public void afterTextChanged(Editable editable) {
-                String word = String.valueOf(editable.toString().trim());
-                if(word.length() >= 3){
-                    clearLookupResult();
-                    lookupUri(word);
-                }else{
-                    clearLookupResult();
-                }
+            public void afterTextChanged(final Editable editable) {
+                Handler handler = new Handler();
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        String word = String.valueOf(editable.toString().trim());
+                        if(word.length() >= 3){
+                            clearLookupResult();
+                            hideSelectedRecommend();
+                            lookupUri(word);
+                        }else{
+                            clearLookupResult();
+                            if(mSelectedRecommends.size() > 0){
+                                showSelectedRecommend();
+                            }
+                        }
+                    }
+                }, 1000);
             }
         });
 
-        mKSListview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        mListviewKS.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                addTagGroup(mKeywordSearchs.get(i).getLabel(), mKeywordSearchs.get(i).getUri());
+                KeywordSearch keywordSearch = mKeywordSearchs.get(i);
+                Recommend recommend = new Recommend(
+                        keywordSearch.getLabel(), keywordSearch.getUri(), keywordSearch.getThumb());
+                mSelectedRecommends.add(recommend);
+                mRecommedAdapter.notifyDataSetChanged();
+                showSelectedRecommend();
                 clearLookupResult();
                 mEdtSearch.setText("");
             }
@@ -235,6 +321,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     }
                     KeywordSearch ks = new KeywordSearch(label, uri, description, null, "Type");
                     mKeywordSearchs.add(ks);
+                    mKSAdapter.notifyDataSetChanged();
                 }
             }
             searchImageForUri();
@@ -244,6 +331,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void searchImageForUri(){
+        if(mKeywordSearchs.size() == 0){
+            return;
+        }
         String query = "SELECT ?uri ?img\n" +
                 "WHERE\n" +
                 "{\n" +
@@ -255,6 +345,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         query += " ?uri = <" + mKeywordSearchs.get(mKeywordSearchs.size() - 1) + "> ) }";
         showLog("Query: " + query);
         String url = Utils.createUrlDbpedia(query);
+        showLog("URL: " + url);
 
         StringRequest request = new StringRequest(Request.Method.GET, url,
                 new Response.Listener<String>() {
@@ -270,15 +361,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                     JSONObject element = data.getJSONObject(i);
                                     String uri = element.getJSONObject("uri").getString("value");
                                     String thumb = element.getJSONObject("img").getString("value");
-                                    insertThumb(uri, thumb);
+                                    insertKSThumbnail(uri, thumb);
                                 }
-                                mKSAdapter.notifyDataSetChanged();
                             }
                         } catch (JSONException e) {
                             e.printStackTrace();
                         }
                     }
-                }, new Response.ErrorListener() {
+                },  new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
                 showLog("Error: " + error.getMessage());
@@ -287,28 +377,34 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         AppController.getInstance().addToRequestQueue(request, "image");
     }
 
-    private void insertThumb(String uri, String thumb){
-        showLog("Thumb: " + thumb);
+    private void insertKSThumbnail(String uri, String thumb){
         for(KeywordSearch ks : mKeywordSearchs){
             if(ks.getUri().equals(uri)){
                 ks.setThumb(thumb);
+                mKSAdapter.notifyDataSetChanged();
+                return;
             }
         }
     }
 
-    private void addTagGroup(String label, String uri){
-        if(!mInputURIs.contains(uri)){
-            Tag tag = new Tag(label);
-            tag.isDeletable = true;
-            mTagGroup.addTag(tag);
-            mInputURIs.add(uri);
-        }else{
-            showLogAndToast(label + " added!");
+    @Override
+    public void onBackPressed() {
+        moveTaskToBack(true);
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            moveTaskToBack(true);
+            return true;
         }
+        return super.onKeyDown(keyCode, event);
     }
 
     private void showLog(String message){
-        Log.d(TAG, message);
+        if(message != null){
+            Log.d(TAG, message);
+        }
     }
 
     private void showLogAndToast(final String message){

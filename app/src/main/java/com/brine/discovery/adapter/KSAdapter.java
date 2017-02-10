@@ -1,15 +1,21 @@
 package com.brine.discovery.adapter;
 
 import android.content.Context;
+import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.brine.discovery.R;
 import com.brine.discovery.model.KeywordSearch;
+import com.brine.discovery.model.Recommend;
+import com.squareup.picasso.Callback;
 import com.squareup.picasso.Picasso;
 
 import java.util.List;
@@ -48,7 +54,7 @@ public class KSAdapter extends BaseAdapter {
 
     @Override
     public View getView(int i, View view, ViewGroup viewGroup) {
-        ViewHolder holder;
+        final ViewHolder holder;
         if(view == null){
             view = mLayoutInflater.inflate(
                     R.layout.ks_item, null);
@@ -58,6 +64,7 @@ public class KSAdapter extends BaseAdapter {
             holder.tvDescription = (TextView) view.findViewById(R.id.tv_description);
             holder.tvType = (TextView) view.findViewById(R.id.tv_type);
             holder.imgThumb = (ImageView) view.findViewById(R.id.img_thumb);
+            holder.progressLoading = (ProgressBar) view.findViewById(R.id.progress_loading);
             view.setTag(holder);
         }else {
             holder = (ViewHolder) view.getTag();
@@ -68,17 +75,33 @@ public class KSAdapter extends BaseAdapter {
         holder.tvLabel.setText(keywordSearch.getLabel());
         holder.tvDescription.setText(keywordSearch.getDescription());
         holder.tvType.setText(keywordSearch.getType());
-//        if(keywordSearch.getThumb() != null){
-//            Picasso.with(mContext).load(keywordSearch.getThumb()).into(holder.imgThumb);
-//        }
+        holder.progressLoading.setVisibility(View.VISIBLE);
+        Picasso.with(mContext)
+                .load(keywordSearch.getThumb())
+                .resize(150, 150)
+                .centerCrop()
+                .error(R.drawable.no_image_loading)
+                .into(holder.imgThumb, new Callback() {
+                    @Override
+                    public void onSuccess() {
+                        holder.progressLoading.setVisibility(View.GONE);
+                    }
+
+                    @Override
+                    public void onError() {
+                        holder.progressLoading.setVisibility(View.GONE);
+                    }
+                });
         return view;
     }
 
-    static class ViewHolder {
+    class ViewHolder{
         TextView tvUri;
         TextView tvLabel;
         TextView tvDescription;
         TextView tvType;
         ImageView imgThumb;
+        ProgressBar progressLoading;
     }
+
 }
