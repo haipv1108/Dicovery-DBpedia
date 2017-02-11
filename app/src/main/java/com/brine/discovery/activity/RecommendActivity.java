@@ -67,11 +67,14 @@ public class RecommendActivity extends AppCompatActivity {
                 JSONArray results = jsonArray.getJSONObject(i).getJSONArray("results");
                 if(!checkMeasure(results)) continue;
                 String label = jsonArray.getJSONObject(i).getString("label");
-                if(!label.equals("null")){
-                    adapter.addFrag(new RecommendFragment(), label, results.toString());
+                if(label.equals("null")){
+                    label = jsonArray.getJSONObject(i).getString("uri");
+                }
+//                adapter.addFrag(new RecommendFragment(), label, results.toString());
+                if(label.equals("Mixed")){
+                    adapter.addFragTop(new RecommendFragment(), "TOP", results.toString());
                 }else{
-                    String uri = jsonArray.getJSONObject(i).getString("uri");
-                    adapter.addFrag(new RecommendFragment(), uri, results.toString());
+                    adapter.addFrag(new RecommendFragment(), label, results.toString());
                 }
             }
         } catch (JSONException e) {
@@ -85,7 +88,10 @@ public class RecommendActivity extends AppCompatActivity {
             for(int i = 0; i < results.length(); i++){
                 float threshold = BigDecimal.valueOf(results.getJSONObject(i)
                         .getDouble("value")).floatValue();
-                if(threshold > THRESHOLD) return true;
+                String abtract = results.getJSONObject(i).getString("abstract");
+                String label = results.getJSONObject(i).getString("label");
+                if(threshold > THRESHOLD && !label.equals("null") && !abtract.equals("null"))
+                    return true;
             }
         } catch (JSONException e) {
             e.printStackTrace();
@@ -119,25 +125,23 @@ public class RecommendActivity extends AppCompatActivity {
             mFragmentTitleList.add(title);
         }
 
+        void addFragTop(Fragment fragment, String title, String data){
+            Bundle bundle = new Bundle();
+            bundle.putString(RecommendFragment.DATA, data);
+            fragment.setArguments(bundle);
+            mFragmentList.remove(0);
+            mFragmentTitleList.remove(0);
+
+            mFragmentList.add(0, fragment);
+            mFragmentTitleList.add(0, title);
+        }
+
         @Override
         public CharSequence getPageTitle(int position) {
             return mFragmentTitleList.get(position);
         }
     }
 
-    @Override
-    public void onBackPressed() {
-        moveTaskToBack(true);
-    }
-
-    @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (keyCode == KeyEvent.KEYCODE_BACK) {
-            moveTaskToBack(true);
-            return true;
-        }
-        return super.onKeyDown(keyCode, event);
-    }
 
     public void EXSearch(final List<String> recommends){
         AppController.getInstance().setUriDecovery(recommends);

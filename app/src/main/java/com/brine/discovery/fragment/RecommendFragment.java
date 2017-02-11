@@ -77,7 +77,7 @@ public class RecommendFragment extends Fragment
                 String label = jsonArray.getJSONObject(i).getString("label");
                 String uri = jsonArray.getJSONObject(i).getString("uri");
                 String image = jsonArray.getJSONObject(i).getString("image");
-                if(label.equals("null") || abtract.equals("null") || image.equals("null")){
+                if(label.equals("null") || abtract.equals("null")){
                     continue;
                 }
                 Recommend recommend = new Recommend(label, uri, image);
@@ -92,6 +92,7 @@ public class RecommendFragment extends Fragment
     @Override
     public void showDetails(Recommend recommend) {
         Intent intent = new Intent(getContext(), DetailsActivity.class);
+        intent.putExtra(DetailsActivity.DATA, recommend.getUri());
         startActivity(intent);
     }
 

@@ -14,6 +14,7 @@ import android.widget.TextView;
 import com.brine.discovery.R;
 import com.brine.discovery.model.Recommend;
 import com.squareup.picasso.Callback;
+import com.squareup.picasso.NetworkPolicy;
 import com.squareup.picasso.Picasso;
 
 import java.util.List;
@@ -79,8 +80,6 @@ public class GridViewAdapter extends BaseAdapter {
         holder.progressLoading.setVisibility(View.VISIBLE);
         Picasso.with(mContext)
                 .load(recommend.getImage())
-                .resize(150, 150)
-                .centerCrop()
                 .error(R.drawable.no_image_loading)
                 .into(holder.image, new Callback() {
                     @Override

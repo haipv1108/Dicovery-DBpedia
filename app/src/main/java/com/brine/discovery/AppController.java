@@ -75,6 +75,6 @@ public class AppController extends Application {
     }
 
     public List<String> getFromUriDecovery(){
-        return mPrevUriDecovery;
+        return mCurrentUriDecovery;
     }
 }

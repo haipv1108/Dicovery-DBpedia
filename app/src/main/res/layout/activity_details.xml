@@ -1,6 +1,7 @@
 <android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    xmlns:expandableTextView="http://schemas.android.com/apk/res-auto"
     android:id="@+id/detail_content"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -25,7 +26,7 @@
             app:layout_scrollFlags="scroll|exitUntilCollapsed">
 
             <ImageView
-                android:id="@+id/image"
+                android:id="@+id/img_details"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 tools:background="@drawable/details"
@@ -52,38 +53,124 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical"
-            android:paddingLeft="@dimen/article_keylines"
+            android:paddingLeft="@dimen/_2sdp"
             android:paddingRight="@dimen/md_keylines"
             android:paddingTop="@dimen/md_keylines">
 
-            <TextView
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="?attr/colorAccent"
-                android:text="Description"
-                android:textSize="@dimen/article_titles"
-                android:layout_marginBottom="@dimen/md_keylines" />
+                android:layout_height="match_parent"
+                android:orientation="horizontal">
 
-            <TextView
-                android:id="@+id/place_detail"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                tools:text="@string/detail_desc" />
+                <LinearLayout
+                    android:id="@+id/ln_type_category"
+                    android:layout_width="@dimen/_100sdp"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical">
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="?attr/colorAccent"
-                android:text="Location"
-                android:textSize="@dimen/article_titles"
-                android:layout_marginBottom="@dimen/md_keylines"
-                android:layout_marginTop="@dimen/md_keylines" />
+                </LinearLayout>
 
-            <TextView
-                android:id="@+id/place_location"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                tools:text="@string/detail_location" />
+                <LinearLayout
+                    android:id="@+id/ln_content_details"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:paddingLeft="@dimen/_3sdp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tv_description_label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/description"
+                        android:textAppearance="@android:style/TextAppearance.Material.Body1"
+                        android:layout_marginBottom="@dimen/md_keylines" />
+
+                    <com.ms.square.android.expandabletextview.ExpandableTextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:id="@+id/expand_tv_description"
+                        expandableTextView:maxCollapsedLines="8"
+                        expandableTextView:animDuration="200">
+
+                        <TextView
+                            android:id="@+id/expandable_text"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            tools:text="@string/detail_desc" />
+
+                        <ImageButton
+                            android:id="@id/expand_collapse"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:padding="16dp"
+                            android:layout_gravity="right|bottom"
+                            android:background="@android:color/transparent"/>
+
+                    </com.ms.square.android.expandabletextview.ExpandableTextView>
+
+                    <TextView
+                        android:id="@+id/tv_2youtube_label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Youtube"
+                        android:textAppearance="@android:style/TextAppearance.Material.Body1"
+                        android:layout_marginBottom="@dimen/md_keylines"
+                        android:layout_marginTop="@dimen/md_keylines" />
+
+                    <android.support.v7.widget.RecyclerView
+                        android:id="@+id/recycle_2youtube"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="@dimen/md_keylines"/>
+
+                    <TextView
+                        android:id="@+id/tv_1youtube_label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Youtube 2"
+                        android:textAppearance="@android:style/TextAppearance.Material.Body1"
+                        android:layout_marginBottom="@dimen/md_keylines"
+                        android:layout_marginTop="@dimen/md_keylines" />
+
+                    <android.support.v7.widget.RecyclerView
+                        android:id="@+id/recycle_1youtube"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="@dimen/md_keylines"/>
+
+                    <TextView
+                        android:id="@+id/tv_soundcloud_label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Soundcloud"
+                        android:textAppearance="@android:style/TextAppearance.Material.Body1"
+                        android:layout_marginBottom="@dimen/md_keylines"
+                        android:layout_marginTop="@dimen/md_keylines" />
+
+                    <android.support.v7.widget.RecyclerView
+                        android:id="@+id/recycle_soundcloud"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="@dimen/md_keylines"/>
+
+                    <TextView
+                        android:id="@+id/tv_fmmusic_label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Fm music"
+                        android:textAppearance="@android:style/TextAppearance.Material.Body1"
+                        android:layout_marginBottom="@dimen/md_keylines"
+                        android:layout_marginTop="@dimen/md_keylines" />
+
+                    <android.support.v7.widget.RecyclerView
+                        android:id="@+id/recycle_fmmusic"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="@dimen/md_keylines"/>
+
+                </LinearLayout>
+            </LinearLayout>
+
         </LinearLayout>
     </android.support.v4.widget.NestedScrollView>
 </android.support.design.widget.CoordinatorLayout>

@@ -78,8 +78,6 @@ public class KSAdapter extends BaseAdapter {
         holder.progressLoading.setVisibility(View.VISIBLE);
         Picasso.with(mContext)
                 .load(keywordSearch.getThumb())
-                .resize(150, 150)
-                .centerCrop()
                 .error(R.drawable.no_image_loading)
                 .into(holder.imgThumb, new Callback() {
                     @Override

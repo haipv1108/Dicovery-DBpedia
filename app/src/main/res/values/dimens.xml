@@ -9,7 +9,7 @@
     <dimen name="custom_tab_layout_height">72dp</dimen>
 
     <dimen name="app_bar_height">256dp</dimen>
-    <dimen name="article_keylines">72dp</dimen>
+    <dimen name="article_keylines">90dp</dimen>
     <dimen name="md_keylines">16dp</dimen>
     <dimen name="article_titles">20sp</dimen>
     <string name="detail_location">"8 Rue Scribe, 75009 Paris, France"</string>

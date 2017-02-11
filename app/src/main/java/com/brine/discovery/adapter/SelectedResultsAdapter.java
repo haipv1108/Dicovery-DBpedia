@@ -46,8 +46,6 @@ public class SelectedResultsAdapter extends
         holder.tvLabel.setText(recommend.getLabel());
         Picasso.with(mContext)
                 .load(recommend.getImage())
-                .resize(150, 150)
-                .centerCrop()
                 .error(R.drawable.no_image_loading)
                 .into(holder.image, new Callback() {
                     @Override
