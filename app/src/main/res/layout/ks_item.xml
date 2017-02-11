@@ -5,8 +5,8 @@
 
     <RelativeLayout
         android:id="@+id/rlt_loadimage"
-        android:layout_width="@dimen/_60sdp"
-        android:layout_height="@dimen/_60sdp"
+        android:layout_width="@dimen/_70sdp"
+        android:layout_height="@dimen/_70sdp"
         android:layout_gravity="center"
         android:layout_centerVertical="true"
         android:layout_centerHorizontal="true"
@@ -38,6 +38,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_toRightOf="@+id/rlt_loadimage"
+        android:layout_below="@+id/tv_type"
         android:paddingLeft="@dimen/_4sdp"
         android:orientation="vertical">
 

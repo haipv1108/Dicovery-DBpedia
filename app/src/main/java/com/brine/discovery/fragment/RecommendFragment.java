@@ -1,31 +1,40 @@
 package com.brine.discovery.fragment;
 
 import android.content.Intent;
+import android.media.Image;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.GridView;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.brine.discovery.R;
+import com.brine.discovery.activity.DetailsActivity;
 import com.brine.discovery.activity.MainActivity;
+import com.brine.discovery.activity.RecommendActivity;
 import com.brine.discovery.adapter.GridViewAdapter;
 import com.brine.discovery.model.Recommend;
+import com.squareup.picasso.Callback;
+import com.squareup.picasso.Picasso;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * A simple {@link Fragment} subclass.
  */
-public class RecommendFragment extends Fragment implements GridViewAdapter.GridAdapterCallback{
+public class RecommendFragment extends Fragment
+        implements GridViewAdapter.GridAdapterCallback{
     private final static String TAG = RecommendFragment.class.getCanonicalName();
     public final static String DATA = "data";
 
@@ -55,26 +64,25 @@ public class RecommendFragment extends Fragment implements GridViewAdapter.GridA
         mGridView.setAdapter(mGridAdapter);
 
         parserResponseData();
-        mGridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                Toast.makeText(getContext(), mRecommendDatas.get(i).getUri(), Toast.LENGTH_SHORT).show();
-            }
-        });
     }
 
     private void parserResponseData(){
         try {
             JSONArray jsonArray = new JSONArray(response);
             for(int i = 0; i < jsonArray.length(); i++){
+                float threshold = BigDecimal.valueOf(jsonArray.getJSONObject(i)
+                        .getDouble("value")).floatValue();
+                if(threshold < RecommendActivity.THRESHOLD) continue;
+                String abtract = jsonArray.getJSONObject(i).getString("abstract");
                 String label = jsonArray.getJSONObject(i).getString("label");
                 String uri = jsonArray.getJSONObject(i).getString("uri");
                 String image = jsonArray.getJSONObject(i).getString("image");
-                if(label != null){
-                    Recommend recommend = new Recommend(label, uri, image);
-                    mRecommendDatas.add(recommend);
-                    mGridAdapter.notifyDataSetChanged();
+                if(label.equals("null") || abtract.equals("null") || image.equals("null")){
+                    continue;
                 }
+                Recommend recommend = new Recommend(label, uri, image);
+                mRecommendDatas.add(recommend);
+                mGridAdapter.notifyDataSetChanged();
             }
         } catch (JSONException e) {
             e.printStackTrace();
@@ -83,13 +91,14 @@ public class RecommendFragment extends Fragment implements GridViewAdapter.GridA
 
     @Override
     public void showDetails(Recommend recommend) {
-
+        Intent intent = new Intent(getContext(), DetailsActivity.class);
+        startActivity(intent);
     }
 
     @Override
     public void exSearch(Recommend recommend) {
-        Intent intent = new Intent(getContext(), MainActivity.class);
-        intent.putExtra(MainActivity.DATASEACH, recommend.getUri());
-        startActivity(intent);
+        List<String> recommends = new ArrayList<>();
+        recommends.add(recommend.getUri());
+        ((RecommendActivity)getActivity()).EXSearch(recommends);
     }
 }

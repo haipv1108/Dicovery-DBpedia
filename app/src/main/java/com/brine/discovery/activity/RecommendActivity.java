@@ -1,5 +1,7 @@
 package com.brine.discovery.activity;
 
+import android.app.ProgressDialog;
+import android.content.Intent;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -11,18 +13,35 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.widget.Toast;
 
+import com.android.volley.AuthFailureError;
+import com.android.volley.DefaultRetryPolicy;
+import com.android.volley.Request;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.brine.discovery.AppController;
 import com.brine.discovery.R;
 import com.brine.discovery.fragment.RecommendFragment;
+import com.brine.discovery.fragment.TopFragment;
+import com.brine.discovery.util.Config;
 
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class RecommendActivity extends AppCompatActivity {
     private final static String TAG = RecommendActivity.class.getCanonicalName();
-    public final static String KEY = "response";
+    public final static String DATA = "response";
+    public final static float THRESHOLD = 0.00069f;
+
+    private ProgressDialog mProgressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,17 +58,21 @@ public class RecommendActivity extends AppCompatActivity {
     private void setupViewPager(ViewPager viewPager) {
         ViewPagerAdapter adapter = new ViewPagerAdapter(getSupportFragmentManager());
 
-        String response = getIntent().getStringExtra(KEY);
+        String response = getIntent().getStringExtra(DATA);
+        adapter.addFrag(new TopFragment(), "TOP", response);
+
         try {
             JSONArray jsonArray = new JSONArray(response);
             for(int i = 0; i < jsonArray.length(); i++){
                 JSONArray results = jsonArray.getJSONObject(i).getJSONArray("results");
+                if(!checkMeasure(results)) continue;
                 String label = jsonArray.getJSONObject(i).getString("label");
-                showLog("Label: " + label);
-                if(label.length() == 0){
-                    label = jsonArray.getJSONObject(i).getString("uri");
+                if(!label.equals("null")){
+                    adapter.addFrag(new RecommendFragment(), label, results.toString());
+                }else{
+                    String uri = jsonArray.getJSONObject(i).getString("uri");
+                    adapter.addFrag(new RecommendFragment(), uri, results.toString());
                 }
-                adapter.addFrag(new RecommendFragment(), label, results.toString());
             }
         } catch (JSONException e) {
             e.printStackTrace();
@@ -57,11 +80,24 @@ public class RecommendActivity extends AppCompatActivity {
         viewPager.setAdapter(adapter);
     }
 
+    private boolean checkMeasure(JSONArray results){
+        try {
+            for(int i = 0; i < results.length(); i++){
+                float threshold = BigDecimal.valueOf(results.getJSONObject(i)
+                        .getDouble("value")).floatValue();
+                if(threshold > THRESHOLD) return true;
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     class ViewPagerAdapter extends FragmentPagerAdapter {
         private final List<Fragment> mFragmentList = new ArrayList<>();
         private final List<String> mFragmentTitleList = new ArrayList<>();
 
-        public ViewPagerAdapter(FragmentManager manager) {
+        ViewPagerAdapter(FragmentManager manager) {
             super(manager);
         }
 
@@ -75,7 +111,7 @@ public class RecommendActivity extends AppCompatActivity {
             return mFragmentList.size();
         }
 
-        public void addFrag(Fragment fragment, String title, String data) {
+        void addFrag(Fragment fragment, String title, String data) {
             Bundle bundle = new Bundle();
             bundle.putString(RecommendFragment.DATA, data);
             fragment.setArguments(bundle);
@@ -101,6 +137,90 @@ public class RecommendActivity extends AppCompatActivity {
             return true;
         }
         return super.onKeyDown(keyCode, event);
+    }
+
+    public void EXSearch(final List<String> recommends){
+        AppController.getInstance().setUriDecovery(recommends);
+        mProgressDialog = new ProgressDialog(this);
+        mProgressDialog.setMessage("Loading...");
+        mProgressDialog.show();
+
+        StringRequest request = new StringRequest(Request.Method.POST,
+                "http://api.discoveryhub.co/recommendations", new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                parserPostDataRecommend(response);
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                showLogAndToast("No results! Try again");
+            }
+        }){
+            @Override
+            protected Map<String, String> getParams() throws AuthFailureError {
+                Map<String, String> params = new HashMap<>();
+                for(String param : recommends){
+                    params.put("nodes[]", param);
+                }
+                params.put("accessToken", Config.ACCESS_TOKEN_DISCOVEHUB);
+                showLog("Params: " + params.toString());
+                return params;
+            }
+        };
+        request.setRetryPolicy(new DefaultRetryPolicy(
+                10000,
+                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+
+        AppController.getInstance().addToRequestQueue(request, "EXSearch");
+    }
+
+    private void parserPostDataRecommend(String response){
+        if(response == null) return;
+        try {
+            JSONObject json = new JSONObject(response);
+            String id = json.getString("id");
+            List<String> splitId = Arrays.asList(id.split("/"));
+            String key = splitId.get(splitId.size() - 1);
+            getDataRecomendation(key);
+        } catch (JSONException e1) {
+            e1.printStackTrace();
+        }
+    }
+
+    private void getDataRecomendation(String key){
+        if(key == null) return;
+        String url = "http://api.discoveryhub.co/recommendations/" + key;
+        StringRequest request = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                mProgressDialog.dismiss();
+                try {
+                    JSONArray jsonArray = new JSONArray(response);
+                    if(jsonArray.length() == 1 &&
+                            jsonArray.getJSONObject(0).getJSONArray("results").length() == 1){
+                        showLogAndToast("No results. Try again!");
+                    }else{
+                        showResultRecommendation(response);
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                mProgressDialog.dismiss();
+            }
+        });
+        AppController.getInstance().addToRequestQueue(request, "recommendation");
+    }
+
+    private void showResultRecommendation(String response){
+        Intent intent = getIntent();
+        intent.putExtra(DATA, response);
+        startActivity(intent);
     }
 
     private void showLog(String message){

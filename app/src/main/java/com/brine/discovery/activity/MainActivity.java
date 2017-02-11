@@ -13,10 +13,8 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.KeyEvent;
-import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
@@ -25,6 +23,7 @@ import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.android.volley.AuthFailureError;
+import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
@@ -36,7 +35,6 @@ import com.brine.discovery.adapter.SelectedResultsAdapter;
 import com.brine.discovery.model.KeywordSearch;
 import com.brine.discovery.model.Recommend;
 import com.brine.discovery.util.Utils;
-import com.cunoraz.tagview.Tag;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -50,6 +48,8 @@ import org.xml.sax.SAXException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -64,17 +64,16 @@ import javax.xml.parsers.ParserConfigurationException;
 public class MainActivity extends AppCompatActivity implements View.OnClickListener{
     private static final String TAG = MainActivity.class.getCanonicalName();
     public static final String DATASEACH = "exsearch";
+    private static final int MAXITEM = 4;
 
     private EditText mEdtSearch;
     private ListView mListviewKS;
     private RecyclerView mRecycleRecommed;
-    private ImageButton mBtnEXSearch;
     private RelativeLayout mRltSelectedRecommend;
 
     private KSAdapter mKSAdapter;
     private SelectedResultsAdapter mRecommedAdapter;
     private List<KeywordSearch> mKeywordSearchs;
-    private List<String> mInputURIs;
     private List<Recommend> mSelectedRecommends;
     private ProgressDialog mProgressDialog;
 
@@ -91,7 +90,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mEdtSearch = (EditText) findViewById(R.id.edt_search);
         mListviewKS = (ListView) findViewById(R.id.lv_keyword_search);
         mRecycleRecommed = (RecyclerView) findViewById(R.id.recycle_selected_uri);
-        mBtnEXSearch = (ImageButton) findViewById(R.id.btn_EXSearch);
+        ImageButton mBtnEXSearch = (ImageButton) findViewById(R.id.btn_EXSearch);
         mBtnEXSearch.setOnClickListener(this);
         mRltSelectedRecommend = (RelativeLayout) findViewById(R.id.rlt_seledted_recommend);
     }
@@ -108,7 +107,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void init(){
         mKeywordSearchs = new ArrayList<>();
-        mInputURIs = new ArrayList<>();
         mSelectedRecommends = new ArrayList<>();
 
         mKSAdapter = new KSAdapter(this, mKeywordSearchs);
@@ -134,16 +132,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     showLogAndToast("Please select uri!");
                     return;
                 }
-                List<String> inputUris = new ArrayList<>();
-                for(Recommend node : mSelectedRecommends){
-                    inputUris.add(node.getUri());
-                }
+                final List<String> inputUris = convertToListString(mSelectedRecommends);
                 EXSearch(inputUris);
                 break;
         }
     }
 
+    private List<String> convertToListString(List<Recommend> recommends){
+        List<String> inputUris = new ArrayList<>();
+        for(Recommend node : recommends){
+            inputUris.add(node.getUri());
+        }
+        return inputUris;
+    }
+
     private void EXSearch(final List<String> recommends){
+        AppController.getInstance().setUriDecovery(recommends);
         mProgressDialog = new ProgressDialog(this);
         mProgressDialog.setMessage("Loading...");
         mProgressDialog.show();
@@ -163,13 +167,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             @Override
             protected Map<String, String> getParams() throws AuthFailureError {
                 Map<String, String> params = new HashMap<>();
-                for(String uri: recommends){
-                    params.put("nodes[]", uri);
+                for(String param : recommends){
+                    params.put("nodes[]", param);
                 }
-                showLog("params: " + params.toString());
+                params.put("accessToken", "EAADZC3GL9DyABAHlqpsCkOakfOHFtDITnwwXXnvKPX1m0YNcgB9VO5k8RWTwuKjYDOMQQPkDURWuzkAjq43QENu5qbxxDSn2PLKda7QmIpaJ1TS3qrgYeW6mh0jfFMhpM85WD4AdEBrBhvZCySsamPiVjgdvRMkZBQ2siVlC9mn3ZBye44p6t9ZCyt4OSrDYZD");
                 return params;
             }
         };
+        request.setRetryPolicy(new DefaultRetryPolicy(
+                10000,
+                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+
         AppController.getInstance().addToRequestQueue(request, "EXSearch");
     }
 
@@ -180,7 +189,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             String id = json.getString("id");
             List<String> splitId = Arrays.asList(id.split("/"));
             String key = splitId.get(splitId.size() - 1);
-            showLogAndToast(key);
             getDataRecomendation(key);
         } catch (JSONException e1) {
             e1.printStackTrace();
@@ -217,8 +225,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void showResultRecommendation(String response){
         Intent intent = new Intent(MainActivity.this, RecommendActivity.class);
-        intent.putExtra(RecommendActivity.KEY, response);
-//        finish();
+        intent.putExtra(RecommendActivity.DATA, response);
         startActivity(intent);
     }
 
@@ -258,15 +265,35 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 KeywordSearch keywordSearch = mKeywordSearchs.get(i);
-                Recommend recommend = new Recommend(
-                        keywordSearch.getLabel(), keywordSearch.getUri(), keywordSearch.getThumb());
-                mSelectedRecommends.add(recommend);
-                mRecommedAdapter.notifyDataSetChanged();
-                showSelectedRecommend();
-                clearLookupResult();
-                mEdtSearch.setText("");
+                if(!isSelectedItem(keywordSearch.getUri())){
+                    Recommend recommend = new Recommend(
+                            keywordSearch.getLabel(), keywordSearch.getUri(), keywordSearch.getThumb());
+
+                    if(mSelectedRecommends.size() == MAXITEM){
+                        mSelectedRecommends.remove(mSelectedRecommends.size() - 1);
+                        mRecommedAdapter.notifyDataSetChanged();
+                        showLogAndToast("Max item is 4!");
+                    }
+                    mSelectedRecommends.add(recommend);
+                    mRecommedAdapter.notifyDataSetChanged();
+                    showSelectedRecommend();
+                    clearLookupResult();
+                    mEdtSearch.setText("");
+                }else{
+                    showLogAndToast("Item added. Please select other item!");
+                }
             }
         });
+    }
+
+    private boolean isSelectedItem(String uri){
+        if(mSelectedRecommends.size() == 0) return false;
+        for(Recommend recommend : mSelectedRecommends){
+            if(recommend.getUri().equals(uri)){
+                return true;
+            }
+        }
+        return false;
     }
 
     private void clearLookupResult(){
@@ -302,24 +329,29 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
             Document doc = dBuilder.parse(inputStream);
 
-            Element element=doc.getDocumentElement();
-            element.normalize();
+            Element root = doc.getDocumentElement();
 
-            NodeList nList = doc.getElementsByTagName("Result");
-            for(int i = 0; i < nList.getLength(); i++){
-                Node node = nList.item(i);
-                if(node.getNodeType() == Node.ELEMENT_NODE){
-                    Element e = (Element) node;
-                    String label = e.getElementsByTagName("Label").item(0)
-                            .getChildNodes().item(0).getNodeValue();
-                    String uri = e.getElementsByTagName("URI").item(0)
-                            .getChildNodes().item(0).getNodeValue();
-                    String description = "";
-                    if(e.getElementsByTagName("Description").item(0).getChildNodes().item(0) != null) {
-                        description = e.getElementsByTagName("Description").item(0)
-                                .getChildNodes().item(0).getNodeValue();
+            NodeList nodeList = root.getChildNodes();
+            for(int i = 0; i < nodeList.getLength(); i++){
+                Node node = nodeList.item(i);
+                if(node instanceof Element){
+                    Element result = (Element) node;
+                    String label = result.getElementsByTagName("Label").item(0).getTextContent();
+                    String uri = result.getElementsByTagName("URI").item(0).getTextContent();
+                    String description = result.getElementsByTagName("Description")
+                            .item(0).getTextContent();
+
+                    if(uri.isEmpty() || description.isEmpty()) continue;
+                    NodeList childNodeList = result.getElementsByTagName("Class");
+                    String type = "";
+                    if(childNodeList.getLength() == 0){
+                        type = "Other";
+                    }else{
+                        String typeValue = ((Element)childNodeList.item(0)).getElementsByTagName("Label").item(0).getTextContent();
+                        type = firstUpperString(typeValue);
                     }
-                    KeywordSearch ks = new KeywordSearch(label, uri, description, null, "Type");
+
+                    KeywordSearch ks = new KeywordSearch(label, uri, description, null, type);
                     mKeywordSearchs.add(ks);
                     mKSAdapter.notifyDataSetChanged();
                 }
@@ -328,6 +360,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         } catch (ParserConfigurationException | SAXException | IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private String firstUpperString(String word){
+        String result = "";
+        List<String> splitWord = Arrays.asList(word.split(" "));
+        for(int i = 0; i < splitWord.size(); i++){
+            String value = splitWord.get(i);
+            String type = value.substring(0, 1).toUpperCase() + value.substring(1);
+            result += " " + type;
+        }
+        return result.trim();
     }
 
     private void searchImageForUri(){
