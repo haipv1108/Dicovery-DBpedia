@@ -1,6 +1,7 @@
 package com.brine.discovery.activity;
 
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.graphics.Color;
 import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.v7.app.AppCompatActivity;
@@ -8,6 +9,7 @@ import android.os.Bundle;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -20,7 +22,11 @@ import com.android.volley.toolbox.StringRequest;
 import com.brine.discovery.AppController;
 import com.brine.discovery.R;
 import com.brine.discovery.model.TypeUri;
+import com.brine.discovery.util.Config;
 import com.brine.discovery.util.Utils;
+import com.loopj.android.http.AsyncHttpClient;
+import com.loopj.android.http.AsyncHttpResponseHandler;
+import com.loopj.android.http.RequestParams;
 import com.ms.square.android.expandabletextview.ExpandableTextView;
 import com.squareup.picasso.Callback;
 import com.squareup.picasso.Picasso;
@@ -34,6 +40,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import cz.msebera.android.httpclient.Header;
 
 import static android.R.style.TextAppearance_Material_Body1;
 import static android.R.style.TextAppearance_Material_Body2;
@@ -89,6 +97,16 @@ public class DetailsActivity extends AppCompatActivity {
         mRecycleYoutube1 = (RecyclerView) findViewById(R.id.recycle_1youtube);
         mRecycleSoundCloud = (RecyclerView) findViewById(R.id.recycle_soundcloud);
         mRecycleFmMusic = (RecyclerView) findViewById(R.id.recycle_fmmusic);
+
+        Button btnGraph = (Button) findViewById(R.id.graph);
+        btnGraph.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(DetailsActivity.this, GraphActivity.class);
+                intent.putExtra(GraphActivity.RECOMMENDEDURI, mUri);
+                startActivity(intent);
+            }
+        });
     }
 
     private void init(){
@@ -279,7 +297,27 @@ public class DetailsActivity extends AppCompatActivity {
     }
 
     private void getGraphDecovery(){
+        List<String> fromUris = AppController.getInstance().getFromUriDecovery();
 
+        AsyncHttpClient client = new AsyncHttpClient();
+        RequestParams params = new RequestParams();
+        for(String uri : fromUris){
+            params.add("nodes[]", uri);
+        }
+        params.add("nodes[]", mUri);
+        showLog("Params graph: " + params.toString());
+        client.post(Config.DISCOVERYHUB_GRAPH_API, params, new AsyncHttpResponseHandler() {
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
+                String response = new String(responseBody);
+                showLog("Response graph: " + response);
+            }
+
+            @Override
+            public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
+
+            }
+        });
     }
 
     private void getCategoryInfo(){

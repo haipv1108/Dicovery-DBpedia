@@ -39,7 +39,7 @@ import java.util.Map;
 public class RecommendActivity extends AppCompatActivity {
     private final static String TAG = RecommendActivity.class.getCanonicalName();
     public final static String DATA = "response";
-    public final static float THRESHOLD = 0.00069f;
+    public final static float THRESHOLD = 0.0f;
 
     private ProgressDialog mProgressDialog;
 

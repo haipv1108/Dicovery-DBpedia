@@ -12,7 +12,6 @@ import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.EditText;
@@ -22,8 +21,6 @@ import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
-import com.android.volley.AuthFailureError;
-import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
@@ -34,7 +31,11 @@ import com.brine.discovery.adapter.KSAdapter;
 import com.brine.discovery.adapter.SelectedResultsAdapter;
 import com.brine.discovery.model.KeywordSearch;
 import com.brine.discovery.model.Recommend;
+import com.brine.discovery.util.Config;
 import com.brine.discovery.util.Utils;
+import com.loopj.android.http.AsyncHttpClient;
+import com.loopj.android.http.AsyncHttpResponseHandler;
+import com.loopj.android.http.RequestParams;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -48,18 +49,16 @@ import org.xml.sax.SAXException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+
+import cz.msebera.android.httpclient.Header;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener{
     private static final String TAG = MainActivity.class.getCanonicalName();
@@ -152,34 +151,26 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mProgressDialog.setMessage("Loading...");
         mProgressDialog.show();
 
-        StringRequest request = new StringRequest(Request.Method.POST,
-                "http://api.discoveryhub.co/recommendations", new Response.Listener<String>() {
+        AsyncHttpClient client = new AsyncHttpClient();
+        RequestParams params = new RequestParams();
+        for(String param : recommends){
+            params.add("nodes[]", param);
+        }
+        showLog("Params: " + params.toString());
+        client.post(Config.DISCOVERYHUB_RECOMMEND_API, params, new AsyncHttpResponseHandler() {
             @Override
-            public void onResponse(String response) {
+            public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
+                String response = new String(responseBody);
+                showLog(response);
                 parserPostDataRecommend(response);
             }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
 
-            }
-        }){
             @Override
-            protected Map<String, String> getParams() throws AuthFailureError {
-                Map<String, String> params = new HashMap<>();
-                for(String param : recommends){
-                    params.put("nodes[]", param);
-                }
-                params.put("accessToken", "EAADZC3GL9DyABAHlqpsCkOakfOHFtDITnwwXXnvKPX1m0YNcgB9VO5k8RWTwuKjYDOMQQPkDURWuzkAjq43QENu5qbxxDSn2PLKda7QmIpaJ1TS3qrgYeW6mh0jfFMhpM85WD4AdEBrBhvZCySsamPiVjgdvRMkZBQ2siVlC9mn3ZBye44p6t9ZCyt4OSrDYZD");
-                return params;
+            public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
+                showLogAndToast("Error request to server. Try again!");
+                mProgressDialog.dismiss();
             }
-        };
-        request.setRetryPolicy(new DefaultRetryPolicy(
-                10000,
-                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
-                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
-
-        AppController.getInstance().addToRequestQueue(request, "EXSearch");
+        });
     }
 
     private void parserPostDataRecommend(String response){
@@ -314,6 +305,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             @Override
             public void onErrorResponse(VolleyError error) {
                 showLog(error.getMessage());
+                showLogAndToast("No results");
             }
         });
         AppController.getInstance().addToRequestQueue(stringRequest, "lookup");
@@ -332,6 +324,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             Element root = doc.getDocumentElement();
 
             NodeList nodeList = root.getChildNodes();
+            if(nodeList.getLength() == 0){
+                showLogAndToast("No results");
+                return;
+            }
             for(int i = 0; i < nodeList.getLength(); i++){
                 Node node = nodeList.item(i);
                 if(node instanceof Element){

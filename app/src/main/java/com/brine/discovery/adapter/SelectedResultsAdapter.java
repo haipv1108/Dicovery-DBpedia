@@ -69,15 +69,13 @@ public class SelectedResultsAdapter extends
         TextView tvUri;
         TextView tvLabel;
         ImageView image;
-        ImageButton btnClose;
         ProgressBar progressLoading;
 
-        public ViewHolder(View view){
+        ViewHolder(View view){
             super(view);
             tvUri = (TextView) view.findViewById(R.id.tv_uri);
             tvLabel = (TextView) view.findViewById(R.id.tv_label);
             image = (ImageView) view.findViewById(R.id.img_thumb);
-            btnClose = (ImageButton) view.findViewById(R.id.img_btn_close);
             progressLoading = (ProgressBar) view.findViewById(R.id.progress_loading);
         }
     }

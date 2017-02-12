@@ -1,0 +1,332 @@
+
+<!doctype html>
+<html>
+<head>
+  <title>Network | Circular images</title>
+
+  <style type="text/css">
+    body {
+      font: 10pt arial;
+    }
+    #mynetwork {
+      width: 1000px;
+      height: 1000px;
+      border: 1px solid lightgray;
+      background-color:#333333;
+    }
+  </style>
+
+  <script type="text/javascript" src="vis.js"></script>
+  <link href="vis.css" rel="stylesheet" type="text/css" />
+  <script type="text/javascript" src="jquery.js"></script>
+
+  <script type="text/javascript">
+    const DBPEDIA_URL = "http://dbpedia-test.inria.fr/sparql?default-graph-uri=&query=";
+    const RESULT_RETURN_TYPE = "&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000";
+
+    var nodes = []
+    var edges = []
+    var network = null;
+
+    var fromUris = [];
+    var recommendedUri;
+
+    var vertexs = [];
+
+    window.onload = function(e){
+      init();
+    }
+
+    function init(){
+        recommendedUri = JSInterface.getRecommendedUri();
+        var length = JSInterface.getLengthFromUris();
+        for(var i = 0; i < length; i++){
+          var uri = JSInterface.getValueOfFromUris(i);
+          fromUris.push(uri);
+        }
+        JSInterface.showToast(fromUris.length);
+
+        JSInterface.showProgressDialog();
+        get_graph_data();
+    }
+
+    function get_graph_data(){
+        var data = get_data_post();
+
+        $.ajax({
+            url:    "http://semreco.inria.fr/hub/search/graph",
+            type:   "POST",
+            data:   data,
+            dataType: "json",
+            success: function(data){
+                console.log("loaded data post: " + data);
+                get_detail_info(data);
+            },
+            error: function(message){
+
+            }
+        });
+    }
+
+    function get_data_post(){
+        var uris = fromUris;
+        uris.push(recommendedUri);
+        console.log("uris: " + uris);
+
+        var data = $.param({"nodes[]": uris}, true);
+        console.log("data post: " + data);
+        return data;
+    }
+
+    function get_detail_info(root_data){
+        var uris = [];
+        for(var i = 0; i < root_data.length; i++){
+            var x_uri = root_data[i].x.value;
+            var z_uri = root_data[i].z.value;
+
+            if(uris.indexOf(x_uri) == -1){
+                uris.push(x_uri);
+            }
+            if(uris.indexOf(z_uri) == -1){
+                uris.push(z_uri);
+            }
+        }
+        console.log(uris);
+        var url = create_url_dbpedia(uris);
+        console.log(url);
+        $.ajax({
+            type:       "GET",
+            url:        url,
+            root_data:  root_data,
+            dataType:   "json",
+            success:    function(data){
+                parse_details_info(this.root_data, data);
+            },
+            error:      function(message){
+                console.log("Error: " + message);
+            }
+        });
+    }
+
+    function parse_details_info(root_data, data){
+        console.log("root data");
+        console.log(root_data);
+        if(data.results.bindings != undefined){
+            var arr_result = data.results.bindings;
+            for(var i = 0; i < arr_result.length; i++){
+                var uri = arr_result[i].uri.value;
+                var label = arr_result[i].label.value;
+                var description = arr_result[i].description.value;
+                var image = "";
+                if(arr_result[i].image != undefined){
+                    image = arr_result[i].image.value;
+                }else{
+                    image = "no_image.png";
+                }
+                update_root_data(root_data, uri, label, description, image);
+            }
+            draw_graph(root_data);
+        }
+    }
+
+    function update_root_data(root_data, uri, label, description, image){
+        for(var i = 0; i < root_data.length; i++){
+            var x_uri = root_data[i].x.value;
+            var z_uri = root_data[i].z.value;
+            if(x_uri == uri){
+                root_data[i].x.label = label;
+                root_data[i].x.description = description;
+                root_data[i].x.image = image;
+            }
+            if(z_uri == uri){
+                root_data[i].z.label = label;
+                root_data[i].z.description = description;
+                root_data[i].z.image = image;
+            }
+        }
+    }
+
+    function create_url_dbpedia(uris){
+        var query = "SELECT DISTINCT ?uri ?image ?label ?description WHERE { ?uri rdfs:label ?label . OPTIONAL {?uri rdfs:comment ?description} . OPTIONAL {?uri <http://dbpedia.org/ontology/thumbnail> ?image} . FILTER (";
+        for(var i = 0; i < uris.length; i++){
+            if(i == 0){
+                query += "?uri=<" + uris[i] + "> ";
+            }else{
+                query += "|| ?uri=<" + uris[i] + "> ";
+            }
+        }
+        query += ") . FILTER ( lang(?label) = 'en' && lang(?description) = 'en' )}";
+        console.log(query);
+        var url = DBPEDIA_URL + encodeURIComponent(query) + RESULT_RETURN_TYPE;
+        return url;
+    }
+
+    function draw_graph(data){
+        for(var i = 0; i < data.length; i++){
+            var x_uri = data[i].x.value;
+            var z_uri = data[i].z.value;
+            var is_x = false;
+            var is_z = false;
+
+            if(find_id_vertexs(x_uri) == -1){
+                var vertex = {
+                            id:             create_id_vertex(),
+                            uri:            x_uri,
+                            shape:          "circularImage",
+                            image:          data[i].x.image,
+                            label:          data[i].x.label,
+                            description:    data[i].x.description,
+                            target_id:      []
+                        };
+                vertexs.push(vertex);
+            }
+            if(find_id_vertexs(z_uri) == -1){
+                var vertex = {
+                            id:             create_id_vertex(),
+                            uri:            z_uri,
+                            shape:          "circularImage",
+                            image:          data[i].z.image,
+                            label:          data[i].z.label,
+                            description:    data[i].z.description,
+                            target_id:      []
+                        };
+                console.log("vertex id: " + vertex.id);
+                vertexs.push(vertex);
+            }
+        }
+
+        for(var i = 0; i < data.length; i++){
+            var x_uri = data[i].x.value;
+            var z_uri = data[i].z.value;
+
+            var id_x = find_uri_vertexs(x_uri);
+            var position_z = find_id_vertexs(z_uri);
+            if(id_x != -1 && position_z != -1){
+                if(vertexs[id_x].target_id.indexOf(position_z) == -1){
+                    vertexs[id_x].target_id.push(position_z);
+                }
+            }
+        }
+
+        console.log("vertexs");
+        console.log(vertexs);
+
+        draw();
+    }
+
+    function is_in_vertexs(uri){
+        for(var i = 0; i < vertexs.length; i++){
+            if(vertexs[i].uri == uri){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function find_id_vertexs(uri){
+        var position = -1;
+        for (var i = vertexs.length - 1; i >= 0; i--) {
+            if(vertexs[i].uri == uri){
+                position = vertexs[i].id;
+            }
+        }
+        return position;
+    }
+
+    function find_uri_vertexs(uri){
+        var position = -1;
+        for (var i = vertexs.length - 1; i >= 0; i--) {
+            if(vertexs[i].uri == uri){
+                position = i;
+            }
+        }
+        return position;
+    }
+
+    function find_position_vertexs(id){
+        var position = -1;
+        for (var i = vertexs.length - 1; i >= 0; i--) {
+            if(vertexs[i].id == id){
+                position = i;
+            }
+        }
+        return position;
+    }
+
+    function create_id_vertex(){
+        var max_id = vertexs.length;
+        var id = max_id + 1;
+        return id;
+    }
+
+    function draw(){
+        for(var i = 0; i < vertexs.length; i++){
+            nodes.push({
+                id:     vertexs[i].id,
+                shape:  vertexs[i].shape,
+                image:  vertexs[i].image,
+                label:  vertexs[i].label
+            });
+            for(var j = 0; j < vertexs[i].target_id.length; j++){
+                edges.push({
+                    from:   vertexs[i].id,
+                    to:     vertexs[i].target_id[j]
+                });
+            }
+        }
+
+        var container = document.getElementById('mynetwork');
+        var data = {
+            nodes: nodes,
+            edges: edges
+        };
+
+        var options = {
+                autoResize: true,
+                width: '100%',
+                height: '100%',
+                nodes: {
+                    borderWidth:2,
+                    size:25,
+                    color: {
+                        border: '#222222',
+                        background: '#666666'
+                    },
+                    font:{color:'#eeeeee'}
+                },
+                edges: {
+                    color: 'lightgray'
+                }
+            };
+
+        network = new vis.Network(container, data, options);
+
+        JSInterface.dismissProgressDialog();
+
+        network.on('selectNode', selectNode);
+        network.on('deselectNode', deselectNode);
+        network.on('selectEdge', selectEdge);
+
+        function selectNode(data){
+            console.log(data.nodes[0]);
+            var position = find_position_vertexs(data.nodes[0]);
+            console.log(vertexs[position].description);
+            JSInterface.showSnackBar(vertexs[position].description);
+        }
+
+        function deselectNode(){
+            console.log('deselectNode');
+        }
+
+        function selectEdge(){
+            console.log('selectEdge');
+        }
+    }
+  </script>
+
+</head>
+
+<body>
+<div id="mynetwork"></div>
+</body>
+</html>
