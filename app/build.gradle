@@ -35,4 +35,5 @@ dependencies {
     compile 'com.ms-square:expandableTextView:0.1.4'
     compile 'com.loopj.android:android-async-http:1.4.9'
     testCompile 'junit:junit:4.12'
+    compile files('lib/YouTubeAndroidPlayerApi.jar')
 }

@@ -55,6 +55,7 @@ public class AppController extends Application {
     }
 
     public void cancelPendingRequests(Object tag) {
+        Log.d("AppController", "Cancel pending request: " + tag);
         if (mRequestQueue != null) {
             mRequestQueue.cancelAll(tag);
         }

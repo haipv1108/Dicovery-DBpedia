@@ -292,6 +292,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void lookupUri(String word){
+        AppController.getInstance().cancelPendingRequests("lookup");
         String url = Utils.createUrlKeywordSearch(word);
         StringRequest stringRequest = new StringRequest(
                 Request.Method.GET, url, new Response.Listener<String>() {
@@ -412,7 +413,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 showLog("Error: " + error.getMessage());
             }
         });
-        AppController.getInstance().addToRequestQueue(request, "image");
+        AppController.getInstance().addToRequestQueue(request, "lookup");
     }
 
     private void insertKSThumbnail(String uri, String thumb){

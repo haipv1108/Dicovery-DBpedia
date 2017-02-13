@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.support.design.widget.CollapsingToolbarLayout;
+import android.support.design.widget.CoordinatorLayout;
+import android.support.v4.widget.NestedScrollView;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.DefaultItemAnimator;
@@ -30,6 +32,7 @@ import com.brine.discovery.model.SCMusic;
 import com.brine.discovery.model.TypeUri;
 import com.brine.discovery.model.YoutubeVideo;
 import com.brine.discovery.util.Utils;
+import com.brine.discovery.view.OnSwipeTouchListener;
 import com.ms.square.android.expandabletextview.ExpandableTextView;
 import com.squareup.picasso.Picasso;
 
@@ -54,15 +57,16 @@ public class DetailsActivity extends AppCompatActivity
     public static final String DATA = "uri";
     private static final int NUMBER_REQUEST = 3;
 
-    private CollapsingToolbarLayout collapsingToolbar;
+    private CollapsingToolbarLayout mCollapsingToolbar;
     private ImageView mImgDetails;
-    private LinearLayout mLinearTypeCategory, mLinearContentDetails;
+    private LinearLayout mLinearTypeCategory, mLinearContentDetails, mLinearWrapDetails;
     private TextView mTvRecommendedGraph;
     private ExpandableTextView mTvDescriptionDetails;
 
     private String mUri;
 
     private int countRequestCompleted = 0;
+    private boolean isTypeValue = false;
 
     private interface RequestCallBack{
         void startRequestToServer();
@@ -80,11 +84,12 @@ public class DetailsActivity extends AppCompatActivity
     }
 
     private void initUI(){
-        collapsingToolbar =
+        mCollapsingToolbar =
                 (CollapsingToolbarLayout) findViewById(R.id.collapsing_toolbar);
         mImgDetails = (ImageView) findViewById(R.id.img_details);
         mLinearTypeCategory = (LinearLayout) findViewById(R.id.ln_type_category);
         mLinearContentDetails = (LinearLayout) findViewById(R.id.ln_content_details);
+        mLinearWrapDetails = (LinearLayout) findViewById(R.id.liner_details);
 
         mTvDescriptionDetails = (ExpandableTextView) findViewById(R.id.expand_tv_description);
         mTvRecommendedGraph = (TextView) findViewById(R.id.tv_recommened_graph);
@@ -96,6 +101,36 @@ public class DetailsActivity extends AppCompatActivity
                 startActivity(intent);
             }
         });
+
+        mLinearWrapDetails.setOnTouchListener(new OnSwipeTouchListener(this){
+            @Override
+            public void onSwipeLeft() {
+                super.onSwipeLeft();
+                hideTypeCategory();
+            }
+
+            @Override
+            public void onSwipeRight() {
+                super.onSwipeRight();
+                showTypeCategory();
+            }
+        });
+    }
+
+    private void showTypeCategory(){
+        if(isTypeValue){
+            if(mLinearTypeCategory.getVisibility() == View.GONE){
+                mLinearTypeCategory.setVisibility(View.VISIBLE);
+            }
+        }
+    }
+
+    private void hideTypeCategory(){
+        if(isTypeValue){
+            if(mLinearTypeCategory.getVisibility() == View.VISIBLE){
+                mLinearTypeCategory.setVisibility(View.GONE);
+            }
+        }
     }
 
     private void init(){
@@ -170,7 +205,7 @@ public class DetailsActivity extends AppCompatActivity
     }
 
     private void setDetailsInfo(String label, String description, String image){
-        collapsingToolbar.setTitle(label);
+        mCollapsingToolbar.setTitle(label);
         mTvRecommendedGraph.setText("Why " + label + " is recommended?");
         mTvDescriptionDetails.setText(description);
         if(image.contains("http")){
@@ -194,9 +229,12 @@ public class DetailsActivity extends AppCompatActivity
                             JSONArray jsonArray = jsonObject.getJSONObject("results")
                                     .getJSONArray("bindings");
                             if(jsonArray.length() == 0) {
+                                isTypeValue = false;
                                 mLinearTypeCategory.setVisibility(View.GONE);
                                 return;
                             }
+                            isTypeValue = true;
+
                             Map<TypeUri, List<TypeUri>> mapType = new HashMap<>();
                             for(int i = 0; i < jsonArray.length(); i++){
                                 JSONObject result = jsonArray.getJSONObject(i);
@@ -369,6 +407,10 @@ public class DetailsActivity extends AppCompatActivity
     @Override
     public void playVideoYoutube(String videoId) {
         showLogAndToast("Play video id: " + videoId);
+        Intent intent = new Intent(this, YoutubePlayerActivity.class);
+        intent.putExtra(YoutubePlayerActivity.VIDEOID, videoId);
+        startActivity(intent);
+
     }
 
     private String getLabelFromUri(String uri){

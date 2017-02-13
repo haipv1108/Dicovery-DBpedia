@@ -76,7 +76,7 @@ public class Utils {
     }
 
     public static String createUrlGetVideoYoutube(String keywordSearch){
-        String url = Config.GOOGLE_API + "q=" + keywordSearch + "&key=" + Config.GOOGLE_API_KEY;
+        String url = Config.GOOGLE_URL + "q=" + keywordSearch + "&key=" + Config.YOUTUBE_API_KEY;
         showLog("youtube url: " + url);
         return url;
     }

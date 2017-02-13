@@ -2,7 +2,6 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     xmlns:expandableTextView="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/detail_content"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fitsSystemWindows="true">
@@ -58,6 +57,7 @@
             android:paddingTop="@dimen/md_keylines">
 
             <LinearLayout
+                android:id="@+id/liner_details"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:orientation="horizontal">
