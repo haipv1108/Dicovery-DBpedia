@@ -3,13 +3,16 @@ package com.brine.discovery.activity;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v7.widget.DividerItemDecoration;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -21,44 +24,41 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.brine.discovery.AppController;
 import com.brine.discovery.R;
+import com.brine.discovery.adapter.SoundCloudAdapter;
+import com.brine.discovery.adapter.YoutubeAdapter;
+import com.brine.discovery.model.SCMusic;
 import com.brine.discovery.model.TypeUri;
-import com.brine.discovery.util.Config;
+import com.brine.discovery.model.YoutubeVideo;
 import com.brine.discovery.util.Utils;
-import com.loopj.android.http.AsyncHttpClient;
-import com.loopj.android.http.AsyncHttpResponseHandler;
-import com.loopj.android.http.RequestParams;
 import com.ms.square.android.expandabletextview.ExpandableTextView;
-import com.squareup.picasso.Callback;
 import com.squareup.picasso.Picasso;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import cz.msebera.android.httpclient.Header;
-
 import static android.R.style.TextAppearance_Material_Body1;
 import static android.R.style.TextAppearance_Material_Body2;
 
-public class DetailsActivity extends AppCompatActivity {
+public class DetailsActivity extends AppCompatActivity
+        implements YoutubeAdapter.YoutubeAdapterCallBack, SoundCloudAdapter.SCAdapterCallback{
     private static final String TAG = DetailsActivity.class.getCanonicalName();
     public static final String DATA = "uri";
     private static final int NUMBER_REQUEST = 3;
 
     private CollapsingToolbarLayout collapsingToolbar;
     private ImageView mImgDetails;
-    private LinearLayout mLinearTypeCategory, mLinearContentDetaisl;
-    private TextView mTvDescriptionLabel, mTvYoutube2Label,
-            mTvYoutube1Label, mTvSoundcloudLabel, mTvFmMusicLabel;
+    private LinearLayout mLinearTypeCategory, mLinearContentDetails;
+    private TextView mTvRecommendedGraph;
     private ExpandableTextView mTvDescriptionDetails;
-    private RecyclerView mRecycleYoutube2, mRecycleYoutube1, mRecycleSoundCloud,
-            mRecycleFmMusic;
 
     private String mUri;
 
@@ -84,22 +84,11 @@ public class DetailsActivity extends AppCompatActivity {
                 (CollapsingToolbarLayout) findViewById(R.id.collapsing_toolbar);
         mImgDetails = (ImageView) findViewById(R.id.img_details);
         mLinearTypeCategory = (LinearLayout) findViewById(R.id.ln_type_category);
-        mLinearContentDetaisl = (LinearLayout) findViewById(R.id.ln_content_details);
+        mLinearContentDetails = (LinearLayout) findViewById(R.id.ln_content_details);
 
-        mTvDescriptionLabel = (TextView) findViewById(R.id.tv_description_label);
         mTvDescriptionDetails = (ExpandableTextView) findViewById(R.id.expand_tv_description);
-        mTvYoutube2Label = (TextView) findViewById(R.id.tv_2youtube_label);
-        mTvYoutube1Label = (TextView) findViewById(R.id.tv_1youtube_label);
-        mTvSoundcloudLabel = (TextView) findViewById(R.id.tv_soundcloud_label);
-        mTvFmMusicLabel = (TextView) findViewById(R.id.tv_fmmusic_label);
-
-        mRecycleYoutube2 = (RecyclerView) findViewById(R.id.recycle_2youtube);
-        mRecycleYoutube1 = (RecyclerView) findViewById(R.id.recycle_1youtube);
-        mRecycleSoundCloud = (RecyclerView) findViewById(R.id.recycle_soundcloud);
-        mRecycleFmMusic = (RecyclerView) findViewById(R.id.recycle_fmmusic);
-
-        Button btnGraph = (Button) findViewById(R.id.graph);
-        btnGraph.setOnClickListener(new View.OnClickListener() {
+        mTvRecommendedGraph = (TextView) findViewById(R.id.tv_recommened_graph);
+        mTvRecommendedGraph.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(DetailsActivity.this, GraphActivity.class);
@@ -135,7 +124,6 @@ public class DetailsActivity extends AppCompatActivity {
         callBack.startRequestToServer();
         getDetailsInfo();
         getTypesInfo();
-        getGraphDecovery();
         getCategoryInfo();
         getYoutubeData();
         getSoundCloudData();
@@ -183,6 +171,7 @@ public class DetailsActivity extends AppCompatActivity {
 
     private void setDetailsInfo(String label, String description, String image){
         collapsingToolbar.setTitle(label);
+        mTvRecommendedGraph.setText("Why " + label + " is recommended?");
         mTvDescriptionDetails.setText(description);
         if(image.contains("http")){
             String imageUrl = image.replace("http://", "https://");
@@ -258,6 +247,7 @@ public class DetailsActivity extends AppCompatActivity {
             TextView tvLabel = new TextView(this);
             tvLabel.setText(firstUpperString(key.getLabel()));
             tvLabel.setTextAppearance(getApplicationContext(), TextAppearance_Material_Body2);
+            tvLabel.setTextColor(Color.BLACK);
 
             mLinearTypeCategory.addView(tvLabel);
 
@@ -267,6 +257,7 @@ public class DetailsActivity extends AppCompatActivity {
                 TextView tvValue = new TextView(this);
                 tvValue.setText((i + 1) + "." + value.getLabel());
                 tvValue.setTextAppearance(getApplicationContext(), TextAppearance_Material_Body1);
+                tvValue.setTextColor(Color.BLACK);
 
                 tvValue.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -296,30 +287,6 @@ public class DetailsActivity extends AppCompatActivity {
         return result.trim();
     }
 
-    private void getGraphDecovery(){
-        List<String> fromUris = AppController.getInstance().getFromUriDecovery();
-
-        AsyncHttpClient client = new AsyncHttpClient();
-        RequestParams params = new RequestParams();
-        for(String uri : fromUris){
-            params.add("nodes[]", uri);
-        }
-        params.add("nodes[]", mUri);
-        showLog("Params graph: " + params.toString());
-        client.post(Config.DISCOVERYHUB_GRAPH_API, params, new AsyncHttpResponseHandler() {
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
-                String response = new String(responseBody);
-                showLog("Response graph: " + response);
-            }
-
-            @Override
-            public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
-
-            }
-        });
-    }
-
     private void getCategoryInfo(){
 
     }
@@ -329,15 +296,15 @@ public class DetailsActivity extends AppCompatActivity {
         List<String> fromUris = AppController.getInstance().getFromUriDecovery();
         for(String from: fromUris){
             String fromUriLabel = getLabelFromUri(from);
-            String keyword = currentUriLabel + " " + fromUriLabel;
-            String keywordSearch = keyword.replace(" ", "+");
+            final String keyword = currentUriLabel + " " + fromUriLabel;
+            final String keywordSearch = keyword.replace(" ", "+");
             String url = Utils.createUrlGetVideoYoutube(keywordSearch);
             StringRequest request = new StringRequest(Request.Method.GET, url,
                     new Response.Listener<String>() {
                         @Override
                         public void onResponse(String response) {
                             callBack.requestCompleted();
-                            //TODO: view data
+                            parseDataYoutube(response, keyword);
                             showLog("youtube data: " + response);
                         }
                     },
@@ -351,6 +318,59 @@ public class DetailsActivity extends AppCompatActivity {
         }
     }
 
+    private void parseDataYoutube(String response, String keyword){
+        try {
+            JSONObject data = new JSONObject(response);
+            JSONArray items = data.getJSONArray("items");
+            if(items.length() == 0){
+                showLog("Youtube no results");
+                return;
+            }
+            TextView tvLabel = new TextView(this);
+            tvLabel.setText("Youtube's videos For " + URLDecoder.decode(keyword, "UTF-8"));
+            tvLabel.setTypeface(null, Typeface.BOLD);
+            mLinearContentDetails.addView(tvLabel);
+
+            List<YoutubeVideo> youtubeVideos = new ArrayList<>();
+            YoutubeAdapter youtubeAdapter =
+                    new YoutubeAdapter(this, youtubeVideos, this);
+
+            RecyclerView recyclerView = new RecyclerView(this);
+            recyclerView.setHasFixedSize(true);
+            RecyclerView.LayoutManager layoutManager =
+                    new LinearLayoutManager(getApplicationContext(),
+                            LinearLayoutManager.HORIZONTAL, false);
+            recyclerView.setLayoutManager(layoutManager);
+            recyclerView.addItemDecoration(
+                    new DividerItemDecoration(this, LinearLayout.HORIZONTAL));
+            recyclerView.setItemAnimator(new DefaultItemAnimator());
+            recyclerView.setAdapter(youtubeAdapter);
+
+            mLinearContentDetails.addView(recyclerView, -1, -2);
+
+            for(int i = 0; i < items.length(); i++){
+                JSONObject item = items.getJSONObject(i);
+                String videoId = item.getJSONObject("id").getString("videoId");
+                JSONObject snippet = item.getJSONObject("snippet");
+                String title = snippet.getString("title");
+                String channelTitle = snippet.getString("channelTitle");
+                String thumbnail = snippet.getJSONObject("thumbnails")
+                        .getJSONObject("default").getString("url");
+                YoutubeVideo youtubeVideo = new YoutubeVideo(
+                        videoId, title, thumbnail, channelTitle);
+                youtubeVideos.add(youtubeVideo);
+                youtubeAdapter.notifyDataSetChanged();
+            }
+        } catch (JSONException | UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void playVideoYoutube(String videoId) {
+        showLogAndToast("Play video id: " + videoId);
+    }
+
     private String getLabelFromUri(String uri){
         List<String> splitUri = Arrays.asList(uri.split("/"));
         String label = splitUri.get(splitUri.size() - 1).replace("_", " ");
@@ -358,14 +378,14 @@ public class DetailsActivity extends AppCompatActivity {
     }
 
     private void getSoundCloudData(){
-        String keyword = getLabelFromUri(mUri);
+        final String keyword = getLabelFromUri(mUri);
         String url = Utils.createUrlGetSoundCloud(keyword);
         StringRequest request = new StringRequest(Request.Method.GET, url,
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
                         callBack.requestCompleted();
-                        //TODO: view data
+                        parseDataSoundCloud(response, keyword);
                         showLog("soundcloud data: " + response);
                     }
                 },
@@ -375,6 +395,58 @@ public class DetailsActivity extends AppCompatActivity {
                         callBack.requestCompleted();
                     }
                 });
+        AppController.getInstance().addToRequestQueue(request, "details");
+    }
+
+    private void parseDataSoundCloud(String response, String keyword){
+        try {
+            JSONArray data = new JSONArray(response);
+            if(data.length() == 0){
+                showLog("Soundcloud no results");
+                return;
+            }
+
+            TextView tvLabel = new TextView(this);
+            tvLabel.setText("SoundCloud's Tracks For " + URLDecoder.decode(keyword, "UTF-8"));
+            tvLabel.setTypeface(null, Typeface.BOLD);
+            mLinearContentDetails.addView(tvLabel);
+
+            List<SCMusic> scMusics = new ArrayList<>();
+            SoundCloudAdapter SCAdapter = new SoundCloudAdapter(this, scMusics, this);
+
+            RecyclerView recyclerView = new RecyclerView(this);
+            recyclerView.setHasFixedSize(true);
+            RecyclerView.LayoutManager layoutManager =
+                    new LinearLayoutManager(getApplicationContext(),
+                            LinearLayoutManager.HORIZONTAL, false);
+            recyclerView.setLayoutManager(layoutManager);
+            recyclerView.addItemDecoration(
+                    new DividerItemDecoration(this, LinearLayout.HORIZONTAL));
+            recyclerView.setItemAnimator(new DefaultItemAnimator());
+            recyclerView.setAdapter(SCAdapter);
+
+            mLinearContentDetails.addView(recyclerView, -1, -2);
+
+            for(int i = 0; i < data.length(); i++){
+                JSONObject item = data.getJSONObject(i);
+                long musicId = item.getLong("id");
+                String title = item.getString("title");
+                String streamUrl = item.getString("stream_url");
+                String artworkUrl = item.getString("artwork_url");
+                SCMusic scMusic = new SCMusic(musicId, title, streamUrl, artworkUrl);
+                scMusics.add(scMusic);
+                SCAdapter.notifyDataSetChanged();
+            }
+
+        } catch (JSONException | UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    @Override
+    public void playSoundCloudMusic(String streamUrl) {
+        showLogAndToast("Play music : " + streamUrl);
     }
 
     private void getFmMusicData(){

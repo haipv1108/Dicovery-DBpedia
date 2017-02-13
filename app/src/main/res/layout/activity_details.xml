@@ -77,11 +77,14 @@
                     android:paddingLeft="@dimen/_3sdp"
                     android:orientation="vertical">
 
-                    <Button
-                        android:id="@+id/graph"
+                    <TextView
+                        android:id="@+id/tv_recommened_graph"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Graph"/>
+                        android:textAppearance="@android:style/TextAppearance.Material.Caption"
+                        android:background="@android:color/holo_orange_light"
+                        android:text="Why result is recommended?"
+                        android:layout_marginBottom="4dp" />
 
                     <TextView
                         android:id="@+id/tv_description_label"
@@ -113,66 +116,6 @@
                             android:background="@android:color/transparent"/>
 
                     </com.ms.square.android.expandabletextview.ExpandableTextView>
-
-                    <TextView
-                        android:id="@+id/tv_2youtube_label"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Youtube"
-                        android:textAppearance="@android:style/TextAppearance.Material.Body1"
-                        android:layout_marginBottom="@dimen/md_keylines"
-                        android:layout_marginTop="@dimen/md_keylines" />
-
-                    <android.support.v7.widget.RecyclerView
-                        android:id="@+id/recycle_2youtube"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="@dimen/md_keylines"/>
-
-                    <TextView
-                        android:id="@+id/tv_1youtube_label"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Youtube 2"
-                        android:textAppearance="@android:style/TextAppearance.Material.Body1"
-                        android:layout_marginBottom="@dimen/md_keylines"
-                        android:layout_marginTop="@dimen/md_keylines" />
-
-                    <android.support.v7.widget.RecyclerView
-                        android:id="@+id/recycle_1youtube"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="@dimen/md_keylines"/>
-
-                    <TextView
-                        android:id="@+id/tv_soundcloud_label"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Soundcloud"
-                        android:textAppearance="@android:style/TextAppearance.Material.Body1"
-                        android:layout_marginBottom="@dimen/md_keylines"
-                        android:layout_marginTop="@dimen/md_keylines" />
-
-                    <android.support.v7.widget.RecyclerView
-                        android:id="@+id/recycle_soundcloud"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="@dimen/md_keylines"/>
-
-                    <TextView
-                        android:id="@+id/tv_fmmusic_label"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Fm music"
-                        android:textAppearance="@android:style/TextAppearance.Material.Body1"
-                        android:layout_marginBottom="@dimen/md_keylines"
-                        android:layout_marginTop="@dimen/md_keylines" />
-
-                    <android.support.v7.widget.RecyclerView
-                        android:id="@+id/recycle_fmmusic"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="@dimen/md_keylines"/>
 
                 </LinearLayout>
             </LinearLayout>

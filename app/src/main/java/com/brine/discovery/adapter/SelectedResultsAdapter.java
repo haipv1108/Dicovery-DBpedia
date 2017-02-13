@@ -44,6 +44,7 @@ public class SelectedResultsAdapter extends
         Recommend recommend = mListData.get(position);
         holder.tvUri.setText(recommend.getUri());
         holder.tvLabel.setText(recommend.getLabel());
+        holder.progressLoading.setVisibility(View.VISIBLE);
         Picasso.with(mContext)
                 .load(recommend.getImage())
                 .error(R.drawable.no_image_loading)

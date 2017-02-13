@@ -62,7 +62,6 @@ import cz.msebera.android.httpclient.Header;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener{
     private static final String TAG = MainActivity.class.getCanonicalName();
-    public static final String DATASEACH = "exsearch";
     private static final int MAXITEM = 4;
 
     private EditText mEdtSearch;
