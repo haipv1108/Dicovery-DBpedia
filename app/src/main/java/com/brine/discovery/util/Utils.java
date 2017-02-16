@@ -84,7 +84,7 @@ public class Utils {
     public static String createUrlGetSoundCloud(String keyword){
         String url = "";
         try {
-            url = Config.SOUNDCLOUD_API + URLEncoder.encode(keyword, "UTF-8");
+            url = Config.SOUNDCLOUD_URL + URLEncoder.encode(keyword, "UTF-8");
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }

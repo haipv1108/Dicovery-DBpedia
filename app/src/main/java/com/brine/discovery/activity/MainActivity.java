@@ -29,9 +29,11 @@ import com.brine.discovery.AppController;
 import com.brine.discovery.R;
 import com.brine.discovery.adapter.KSAdapter;
 import com.brine.discovery.adapter.SelectedResultsAdapter;
+import com.brine.discovery.fragment.RecommendFragment;
 import com.brine.discovery.model.KeywordSearch;
 import com.brine.discovery.model.Recommend;
 import com.brine.discovery.util.Config;
+import com.brine.discovery.util.DbpediaConstant;
 import com.brine.discovery.util.Utils;
 import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.AsyncHttpResponseHandler;
@@ -156,7 +158,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             params.add("nodes[]", param);
         }
         showLog("Params: " + params.toString());
-        client.post(Config.DISCOVERYHUB_RECOMMEND_API, params, new AsyncHttpResponseHandler() {
+        client.post(Config.DISCOVERYHUB_RECOMMEND_URL, params, new AsyncHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
                 String response = new String(responseBody);
@@ -197,7 +199,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     if(jsonArray.length() == 1 &&
                             jsonArray.getJSONObject(0).getJSONArray("results").length() == 1){
                         showLogAndToast("No results. Try again!");
-                    }else{
+                    }else if(checkRusultContent(response)){
                         showResultRecommendation(response);
                     }
                 } catch (JSONException e) {
@@ -211,6 +213,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         });
         AppController.getInstance().addToRequestQueue(request, "recommendation");
+    }
+
+    private boolean checkRusultContent(String response){
+        try {
+            JSONArray jsonArray = new JSONArray(response);
+            for(int i = 0; i < jsonArray.length(); i++){
+                String uri = jsonArray.getJSONObject(i).getString("uri");
+                if(DbpediaConstant.isContext(uri)){
+                    return true;
+                }
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
     private void showResultRecommendation(String response){
@@ -231,23 +248,23 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             @Override
             public void afterTextChanged(final Editable editable) {
-                Handler handler = new Handler();
-                handler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        String word = String.valueOf(editable.toString().trim());
-                        if(word.length() >= 3){
-                            clearLookupResult();
-                            hideSelectedRecommend();
-                            lookupUri(word);
-                        }else{
-                            clearLookupResult();
-                            if(mSelectedRecommends.size() > 0){
-                                showSelectedRecommend();
-                            }
-                        }
+//                Handler handler = new Handler();
+//                handler.postDelayed(new Runnable() {
+//                    @Override
+//                    public void run() {
+                String word = String.valueOf(editable.toString().trim());
+                if(word.length() >= 3){
+                    clearLookupResult();
+                    hideSelectedRecommend();
+                    lookupUri(word);
+                }else{
+                    clearLookupResult();
+                    if(mSelectedRecommends.size() > 0){
+                        showSelectedRecommend();
                     }
-                }, 1000);
+                }
+//                    }
+//                }, 1000);
             }
         });
 
@@ -324,35 +341,36 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             Element root = doc.getDocumentElement();
 
             NodeList nodeList = root.getChildNodes();
-            if(nodeList.getLength() == 0){
+            if(nodeList.getLength() > 0){
+                for(int i = 0; i < nodeList.getLength(); i++){
+                    Node node = nodeList.item(i);
+                    if(node instanceof Element){
+                        Element result = (Element) node;
+                        String label = result.getElementsByTagName("Label").item(0).getTextContent();
+                        String uri = result.getElementsByTagName("URI").item(0).getTextContent();
+                        String description = result.getElementsByTagName("Description")
+                                .item(0).getTextContent();
+
+                        if(uri.isEmpty() || description.isEmpty()) continue;
+                        NodeList childNodeList = result.getElementsByTagName("Class");
+                        String type = "";
+                        if(childNodeList.getLength() == 0){
+                            type = "Other";
+                        }else{
+                            String typeValue = ((Element)childNodeList.item(0)).getElementsByTagName("Label").item(0).getTextContent();
+                            type = firstUpperString(typeValue);
+                        }
+
+                        KeywordSearch ks = new KeywordSearch(label, uri, description, null, type);
+                        mKeywordSearchs.add(ks);
+                        mKSAdapter.notifyDataSetChanged();
+                    }
+                }
+                searchImageForUri();
+            }else{
                 showLogAndToast("No results");
                 return;
             }
-            for(int i = 0; i < nodeList.getLength(); i++){
-                Node node = nodeList.item(i);
-                if(node instanceof Element){
-                    Element result = (Element) node;
-                    String label = result.getElementsByTagName("Label").item(0).getTextContent();
-                    String uri = result.getElementsByTagName("URI").item(0).getTextContent();
-                    String description = result.getElementsByTagName("Description")
-                            .item(0).getTextContent();
-
-                    if(uri.isEmpty() || description.isEmpty()) continue;
-                    NodeList childNodeList = result.getElementsByTagName("Class");
-                    String type = "";
-                    if(childNodeList.getLength() == 0){
-                        type = "Other";
-                    }else{
-                        String typeValue = ((Element)childNodeList.item(0)).getElementsByTagName("Label").item(0).getTextContent();
-                        type = firstUpperString(typeValue);
-                    }
-
-                    KeywordSearch ks = new KeywordSearch(label, uri, description, null, type);
-                    mKeywordSearchs.add(ks);
-                    mKSAdapter.notifyDataSetChanged();
-                }
-            }
-            searchImageForUri();
         } catch (ParserConfigurationException | SAXException | IOException e) {
             e.printStackTrace();
         }

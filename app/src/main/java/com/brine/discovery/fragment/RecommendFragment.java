@@ -70,14 +70,10 @@ public class RecommendFragment extends Fragment
         try {
             JSONArray jsonArray = new JSONArray(response);
             for(int i = 0; i < jsonArray.length(); i++){
-                float threshold = BigDecimal.valueOf(jsonArray.getJSONObject(i)
-                        .getDouble("value")).floatValue();
-                if(threshold < RecommendActivity.THRESHOLD) continue;
-                String abtract = jsonArray.getJSONObject(i).getString("abstract");
                 String label = jsonArray.getJSONObject(i).getString("label");
                 String uri = jsonArray.getJSONObject(i).getString("uri");
                 String image = jsonArray.getJSONObject(i).getString("image");
-                if(label.equals("null") || abtract.equals("null")){
+                if(label.equals("null")){
                     continue;
                 }
                 Recommend recommend = new Recommend(label, uri, image);

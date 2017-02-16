@@ -2,6 +2,7 @@ package com.brine.discovery.util;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -211,4 +212,28 @@ public class DbpediaConstant {
         put("website", website);
         put("other", other);
     }};
+
+    public static boolean isContext(String uriInput) {
+        List<String> contextMusic = new ArrayList<>();
+        contextMusic.add("Song");
+        contextMusic.add("Film");
+        contextMusic.add("Band");
+        contextMusic.add("Album");
+        contextMusic.add("MusicalArtist");
+        contextMusic.add("MusicGenre");
+        contextMusic.add("Actor");
+        for(String uri : contextMusic){
+            if(uri.contains("http")){
+                String uriTemp = "http://dbpedia.org/resource/" + uri;
+                if(uriInput.toLowerCase().equals(uriTemp.toLowerCase())){
+                    return true;
+                }
+            }else{
+                if(uriInput.toLowerCase().equals(uri.toLowerCase())){
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 }

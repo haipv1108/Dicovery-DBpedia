@@ -1,6 +1,7 @@
 package com.brine.discovery.fragment;
 
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -14,9 +15,11 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.brine.discovery.R;
+import com.brine.discovery.activity.DetailsActivity;
 import com.brine.discovery.activity.RecommendActivity;
 import com.brine.discovery.adapter.GridViewAdapter;
 import com.brine.discovery.model.Recommend;
+import com.brine.discovery.util.DbpediaConstant;
 import com.squareup.picasso.Callback;
 import com.squareup.picasso.Picasso;
 
@@ -34,7 +37,7 @@ import java.util.List;
  */
 public class TopFragment extends Fragment implements GridViewAdapter.GridAdapterCallback{
     private final static String TAG = TopFragment.class.getCanonicalName();
-    private final static int MAXRESULT = 15;
+    private final static int MAXRESULT = 20;
     private GridView mGridView;
 
     private List<Recommend> mRecommendDatas;
@@ -69,16 +72,16 @@ public class TopFragment extends Fragment implements GridViewAdapter.GridAdapter
             JSONArray jsonArray = new JSONArray(response);
             for(int i = 0; i < jsonArray.length(); i++){
                 JSONArray results = jsonArray.getJSONObject(i).getJSONArray("results");
+                String uriType = results.getJSONObject(i).getString("uri");
+                if(DbpediaConstant.isContext(uriType)) continue;
                 for(int j = 0; j < results.length(); j++){
                     final float threshold = BigDecimal.valueOf(results.getJSONObject(i)
                             .getDouble("value")).floatValue();
-                    if(threshold < RecommendActivity.THRESHOLD) continue;
                     final String label = results.getJSONObject(j).getString("label");
                     String abtract = results.getJSONObject(j).getString("abstract");
                     final String uri = results.getJSONObject(j).getString("uri");
-                    final String image = results.getJSONObject(i).getString("image");
-                    if(label.equals("null") || abtract.equals("null")
-                            || image.equals("null") || uri.equals("null"))
+                    final String image = results.getJSONObject(j).getString("image");
+                    if(label.equals("null") || abtract.equals("null"))
                         continue;
                     Recommend recommend = new Recommend(label, uri, image, threshold);
                     insertRecommend(recommend);
@@ -105,7 +108,9 @@ public class TopFragment extends Fragment implements GridViewAdapter.GridAdapter
 
     @Override
     public void showDetails(Recommend recommend) {
-
+        Intent intent = new Intent(getContext(), DetailsActivity.class);
+        intent.putExtra(DetailsActivity.DATA, recommend.getUri());
+        startActivity(intent);
     }
 
     @Override

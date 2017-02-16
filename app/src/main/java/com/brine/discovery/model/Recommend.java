@@ -28,8 +28,16 @@ public class Recommend {
 
     public Recommend(String label, String uri, String image, float threshold){
         this.label = label;
-        this.uri = uri;
-        this.image = image;
+        if(uri.contains("http")){
+            this.uri = uri;
+        }else{
+            this.uri = "http://dbpedia.org/resource/" + uri;
+        }
+        if(image != null){
+            this.image = image.replace("http://", "https://");
+        }else{
+            this.image = image;
+        }
         this.threshold = threshold;
     }
 

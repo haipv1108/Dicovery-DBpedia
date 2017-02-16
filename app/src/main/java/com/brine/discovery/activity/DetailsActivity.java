@@ -66,6 +66,7 @@ public class DetailsActivity extends AppCompatActivity
     private String mUri;
 
     private int countRequestCompleted = 0;
+    private int maxRequest = 0;
     private boolean isTypeValue = false;
 
     private interface RequestCallBack{
@@ -80,6 +81,7 @@ public class DetailsActivity extends AppCompatActivity
         initUI();
         init();
         mUri = getIntent().getStringExtra(DATA);
+        maxRequest = calRequest();
         loadData();
     }
 
@@ -117,6 +119,13 @@ public class DetailsActivity extends AppCompatActivity
         });
     }
 
+    private int calRequest(){
+        List<String> fromUris = AppController.getInstance().getFromUriDecovery();
+        int lengthFromUris = fromUris.size();
+        int maxRequest = 2 + lengthFromUris + 1; //Details + type + from uris + soundcloud
+        return maxRequest;
+    }
+
     private void showTypeCategory(){
         if(isTypeValue){
             if(mLinearTypeCategory.getVisibility() == View.GONE){
@@ -149,7 +158,7 @@ public class DetailsActivity extends AppCompatActivity
         @Override
         public void requestCompleted() {
             countRequestCompleted++;
-            if(countRequestCompleted == NUMBER_REQUEST){
+            if(countRequestCompleted == maxRequest){
                 progressDialog.dismiss();
             }
         }
@@ -159,7 +168,6 @@ public class DetailsActivity extends AppCompatActivity
         callBack.startRequestToServer();
         getDetailsInfo();
         getTypesInfo();
-        getCategoryInfo();
         getYoutubeData();
         getSoundCloudData();
         getFmMusicData();
@@ -325,10 +333,6 @@ public class DetailsActivity extends AppCompatActivity
         return result.trim();
     }
 
-    private void getCategoryInfo(){
-
-    }
-
     private void getYoutubeData(){
         String currentUriLabel = getLabelFromUri(mUri);
         List<String> fromUris = AppController.getInstance().getFromUriDecovery();
@@ -365,7 +369,7 @@ public class DetailsActivity extends AppCompatActivity
                 return;
             }
             TextView tvLabel = new TextView(this);
-            tvLabel.setText("Youtube's videos For " + URLDecoder.decode(keyword, "UTF-8"));
+            tvLabel.setText("Youtube's videos for " + URLDecoder.decode(keyword, "UTF-8"));
             tvLabel.setTypeface(null, Typeface.BOLD);
             mLinearContentDetails.addView(tvLabel);
 

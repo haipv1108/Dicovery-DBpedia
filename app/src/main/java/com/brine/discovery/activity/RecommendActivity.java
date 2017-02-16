@@ -10,7 +10,6 @@ import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.widget.Toast;
 
 import com.android.volley.AuthFailureError;
@@ -24,6 +23,7 @@ import com.brine.discovery.R;
 import com.brine.discovery.fragment.RecommendFragment;
 import com.brine.discovery.fragment.TopFragment;
 import com.brine.discovery.util.Config;
+import com.brine.discovery.util.DbpediaConstant;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -60,20 +60,17 @@ public class RecommendActivity extends AppCompatActivity {
 
         String response = getIntent().getStringExtra(DATA);
         adapter.addFrag(new TopFragment(), "TOP", response);
-
         try {
             JSONArray jsonArray = new JSONArray(response);
-            for(int i = 0; i < jsonArray.length(); i++){
+            for(int i = jsonArray.length() - 1; i >=0; i--){
                 JSONArray results = jsonArray.getJSONObject(i).getJSONArray("results");
                 if(!checkMeasure(results)) continue;
                 String label = jsonArray.getJSONObject(i).getString("label");
+                String uri = jsonArray.getJSONObject(i).getString("uri");
                 if(label.equals("null")){
-                    label = jsonArray.getJSONObject(i).getString("uri");
+                    label = uri;
                 }
-//                adapter.addFrag(new RecommendFragment(), label, results.toString());
-                if(label.equals("Mixed")){
-                    adapter.addFragTop(new RecommendFragment(), "TOP", results.toString());
-                }else{
+                if(DbpediaConstant.isContext(uri)){
                     adapter.addFrag(new RecommendFragment(), label, results.toString());
                 }
             }
@@ -125,17 +122,6 @@ public class RecommendActivity extends AppCompatActivity {
             mFragmentTitleList.add(title);
         }
 
-        void addFragTop(Fragment fragment, String title, String data){
-            Bundle bundle = new Bundle();
-            bundle.putString(RecommendFragment.DATA, data);
-            fragment.setArguments(bundle);
-            mFragmentList.remove(0);
-            mFragmentTitleList.remove(0);
-
-            mFragmentList.add(0, fragment);
-            mFragmentTitleList.add(0, title);
-        }
-
         @Override
         public CharSequence getPageTitle(int position) {
             return mFragmentTitleList.get(position);
@@ -167,7 +153,7 @@ public class RecommendActivity extends AppCompatActivity {
                 for(String param : recommends){
                     params.put("nodes[]", param);
                 }
-                params.put("accessToken", Config.ACCESS_TOKEN_DISCOVEHUB);
+                params.put("accessToken", Config.DISCOVEHUB_ACCESS_TOKEN);
                 showLog("Params: " + params.toString());
                 return params;
             }
@@ -196,6 +182,7 @@ public class RecommendActivity extends AppCompatActivity {
     private void getDataRecomendation(String key){
         if(key == null) return;
         String url = "http://api.discoveryhub.co/recommendations/" + key;
+        showLog(url);
         StringRequest request = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
             @Override
             public void onResponse(String response) {
@@ -233,7 +220,7 @@ public class RecommendActivity extends AppCompatActivity {
         }
     }
 
-    private void showLogAndToast(final String message){
+    public void showLogAndToast(final String message){
         showLog(message);
         runOnUiThread(new Runnable() {
             @Override
