@@ -39,6 +39,7 @@ public class GridViewAdapter extends BaseAdapter {
 
     public interface GridAdapterCallback{
         void showDetails(Recommend recommend);
+        void addSearch(Recommend recommend);
         void exSearch(Recommend recommend);
     }
 
@@ -110,6 +111,9 @@ public class GridViewAdapter extends BaseAdapter {
                 switch (menuItem.getItemId()){
                     case R.id.menu_details:
                         mCallback.showDetails(recommend);
+                        return true;
+                    case R.id.menu_add_search:
+                        mCallback.addSearch(recommend);
                         return true;
                     case R.id.menu_ex_search:
                         mCallback.exSearch(recommend);

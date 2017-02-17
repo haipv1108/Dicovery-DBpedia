@@ -12,16 +12,12 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.android.volley.AuthFailureError;
-import com.android.volley.DefaultRetryPolicy;
-import com.android.volley.Request;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.StringRequest;
 import com.brine.discovery.AppController;
 import com.brine.discovery.R;
 import com.brine.discovery.fragment.RecommendFragment;
-import com.brine.discovery.fragment.TopFragment;
+import com.brine.discovery.message.MessageObserver;
+import com.brine.discovery.message.MessageObserverManager;
+import com.brine.discovery.model.Recommend;
 import com.brine.discovery.util.Config;
 import com.brine.discovery.util.DbpediaConstant;
 import com.loopj.android.http.AsyncHttpClient;
@@ -41,7 +37,7 @@ import java.util.Map;
 
 import cz.msebera.android.httpclient.Header;
 
-public class RecommendActivity extends AppCompatActivity {
+public class RecommendActivity extends AppCompatActivity implements MessageObserver{
     private final static String TAG = RecommendActivity.class.getCanonicalName();
     public final static String DATA = "response";
     public final static float THRESHOLD = 0.0f;
@@ -59,13 +55,26 @@ public class RecommendActivity extends AppCompatActivity {
 
         TabLayout mTabLayout = (TabLayout) findViewById(R.id.tabs);
         mTabLayout.setupWithViewPager(mViewPager);
+
+        MessageObserverManager.getInstance().addItem(this);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        MessageObserverManager.getInstance().removeAllData();
+    }
+
+    @Override
+    public void updateSelectedItem(Recommend recommend) {
+
     }
 
     private void setupViewPager(ViewPager viewPager) {
         ViewPagerAdapter adapter = new ViewPagerAdapter(getSupportFragmentManager());
 
         String response = getIntent().getStringExtra(DATA);
-        adapter.addFrag(new TopFragment(), "TOP", response, true);
+        adapter.addFrag(new RecommendFragment(), "TOP", response, true);
         try {
             JSONArray jsonArray = new JSONArray(response);
             for(int i = jsonArray.length() - 1; i >=0; i--){
@@ -188,7 +197,6 @@ public class RecommendActivity extends AppCompatActivity {
                 mProgressDialog.dismiss();
                 try {
                     JSONArray jsonArray = new JSONArray(response);
-                    showLogAndToast(response);
                     if(jsonArray.length() == 1 &&
                             jsonArray.getJSONObject(0).getJSONArray("results").length() == 1){
                         showLogAndToast("No results. Try again!");
@@ -224,6 +232,7 @@ public class RecommendActivity extends AppCompatActivity {
     }
 
     private void showResultRecommendation(String response){
+        MessageObserverManager.getInstance().removeAllData();
         Intent intent = getIntent();
         intent.putExtra(DATA, response);
         startActivity(intent);

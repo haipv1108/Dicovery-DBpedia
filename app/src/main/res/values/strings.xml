@@ -2,8 +2,9 @@
     <string name="app_name">Discovery</string>
 
     <string name="tv_option">⋮</string>
-    <string name="details">Details</string>
-    <string name="add_search">EX Search</string>
+    <string name="details">Show details</string>
+    <string name="add_search">Add search</string>
+    <string name="ex_search">EX search</string>
     <string name="detail_desc">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
         eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis
         nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute

@@ -276,7 +276,6 @@ public class MainActivity extends AppCompatActivity
             public void afterTextChanged(final Editable editable) {
                 String word = String.valueOf(editable.toString().trim());
                 if(word.length() >= 3){
-                    //clearLookupResult();
                     hideSelectedRecommend();
                     lookupUri(word);
                 }else{

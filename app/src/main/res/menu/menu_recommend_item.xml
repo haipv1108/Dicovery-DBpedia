@@ -4,6 +4,9 @@
         android:id="@+id/menu_details"
         android:title="@string/details"/>
     <item
-        android:id="@+id/menu_ex_search"
+        android:id="@+id/menu_add_search"
         android:title="@string/add_search"/>
+    <item
+        android:id="@+id/menu_ex_search"
+        android:title="@string/ex_search"/>
 </menu>
