@@ -9,8 +9,8 @@
       font: 10pt arial;
     }
     #mynetwork {
-      width: 1000px;
-      height: 1000px;
+      width: 800px;
+      height: 800px;
       border: 1px solid lightgray;
       background-color:#333333;
     }
@@ -41,8 +41,8 @@
         recommendedUri = JSInterface.getRecommendedUri();
         var length = JSInterface.getLengthFromUris();
         for(var i = 0; i < length; i++){
-          var uri = JSInterface.getValueOfFromUris(i);
-          fromUris.push(uri);
+            var uri = JSInterface.getValueOfFromUris(i);
+            fromUris.push(uri);
         }
         JSInterface.showToast(fromUris.length);
 
@@ -59,7 +59,6 @@
             data:   data,
             dataType: "json",
             success: function(data){
-                console.log("loaded data post: " + data);
                 get_detail_info(data);
             },
             error: function(message){
@@ -71,7 +70,6 @@
     function get_data_post(){
         var uris = fromUris;
         uris.push(recommendedUri);
-        console.log("uris: " + uris);
 
         var data = $.param({"nodes[]": uris}, true);
         console.log("data post: " + data);
@@ -168,7 +166,7 @@
             var is_x = false;
             var is_z = false;
 
-            if(find_id_vertexs(x_uri) == -1){
+            if(find_vertext_by_uri(x_uri) == null){
                 var vertex = {
                             id:             create_id_vertex(),
                             uri:            x_uri,
@@ -178,9 +176,10 @@
                             description:    data[i].x.description,
                             target_id:      []
                         };
+                console.log("vertex id: " + vertex.id);
                 vertexs.push(vertex);
             }
-            if(find_id_vertexs(z_uri) == -1){
+            if(find_vertext_by_uri(z_uri) == null){
                 var vertex = {
                             id:             create_id_vertex(),
                             uri:            z_uri,
@@ -199,58 +198,35 @@
             var x_uri = data[i].x.value;
             var z_uri = data[i].z.value;
 
-            var id_x = find_uri_vertexs(x_uri);
-            var position_z = find_id_vertexs(z_uri);
-            if(id_x != -1 && position_z != -1){
-                if(vertexs[id_x].target_id.indexOf(position_z) == -1){
-                    vertexs[id_x].target_id.push(position_z);
+            var vertex_x = find_vertext_by_uri(x_uri);
+            var vertex_z = find_vertext_by_uri(z_uri);
+            if(vertex_x != null && vertex_z != null){
+                if(vertex_x.target_id.indexOf(vertex_z.id) == -1 &&
+                    vertex_z.target_id.indexOf(vertex_x.id) == -1){
+                    vertex_x.target_id.push(vertex_z.id);
                 }
             }
         }
-
-        console.log("vertexs");
         console.log(vertexs);
-
         draw();
     }
 
-    function is_in_vertexs(uri){
+    function find_vertext_by_uri(uri){
         for(var i = 0; i < vertexs.length; i++){
             if(vertexs[i].uri == uri){
-                return true;
+                return vertexs[i];
             }
         }
-        return false;
+        return null;
     }
 
-    function find_id_vertexs(uri){
-        var position = -1;
-        for (var i = vertexs.length - 1; i >= 0; i--) {
-            if(vertexs[i].uri == uri){
-                position = vertexs[i].id;
-            }
-        }
-        return position;
-    }
-
-    function find_uri_vertexs(uri){
-        var position = -1;
-        for (var i = vertexs.length - 1; i >= 0; i--) {
-            if(vertexs[i].uri == uri){
-                position = i;
-            }
-        }
-        return position;
-    }
-
-    function find_position_vertexs(id){
-        var position = -1;
-        for (var i = vertexs.length - 1; i >= 0; i--) {
+    function find_vertex_by_id(id){
+        for(var i = 0; i < vertexs.length; i++){
             if(vertexs[i].id == id){
-                position = i;
+                return vertexs[i];
             }
         }
-        return position;
+        return null;
     }
 
     function create_id_vertex(){
@@ -268,10 +244,16 @@
                 label:  vertexs[i].label
             });
             for(var j = 0; j < vertexs[i].target_id.length; j++){
-                edges.push({
-                    from:   vertexs[i].id,
-                    to:     vertexs[i].target_id[j]
-                });
+                var vertex_reverse = {
+                    from:   vertexs[i].target_id[j],
+                    to:     vertexs[i].id
+                };
+                if(edges.indexOf(vertex_reverse) == -1){
+                    edges.push({
+                        from:   vertexs[i].id,
+                        to:     vertexs[i].target_id[j]
+                    });
+                }
             }
         }
 
@@ -299,27 +281,23 @@
                 }
             };
 
-        network = new vis.Network(container, data, options);
-
         JSInterface.dismissProgressDialog();
 
+        network = new vis.Network(container, data, options);
         network.on('selectNode', selectNode);
         network.on('deselectNode', deselectNode);
         network.on('selectEdge', selectEdge);
 
         function selectNode(data){
-            console.log(data.nodes[0]);
-            var position = find_position_vertexs(data.nodes[0]);
-            console.log(vertexs[position].description);
+            console.log(data);
+            var vertex = find_vertex_by_id(data.nodes[0]);
+            console.log(vertex.description);
             JSInterface.showSnackBar(vertexs[position].description);
         }
 
-        function deselectNode(){
-            console.log('deselectNode');
-        }
-
-        function selectEdge(){
+        function selectEdge(data){
             console.log('selectEdge');
+            console.log(data);
         }
     }
   </script>

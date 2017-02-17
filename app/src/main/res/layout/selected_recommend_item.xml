@@ -2,7 +2,6 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content">
-
     <RelativeLayout
         android:id="@+id/rlt_loadimage"
         android:layout_width="@dimen/_90sdp"
@@ -35,13 +34,19 @@
             android:layout_height="wrap_content"
             android:visibility="gone"/>
 
-        <TextView
-            android:id="@+id/tv_label"
-            android:layout_width="@dimen/_90sdp"
+        <LinearLayout
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:gravity="center"
-            android:paddingLeft="@dimen/_2sdp"
-            android:textAppearance="@android:style/TextAppearance.Material.Body1" />
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tv_label"
+                android:layout_width="@dimen/_90sdp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:paddingLeft="@dimen/_2sdp"
+                android:textAppearance="@android:style/TextAppearance.Material.Body1" />
+        </LinearLayout>
     </LinearLayout>
 </RelativeLayout>

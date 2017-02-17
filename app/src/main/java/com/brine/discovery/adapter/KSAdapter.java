@@ -25,8 +25,6 @@ import java.util.List;
  */
 
 public class KSAdapter extends BaseAdapter {
-    private static final String TAG = KSAdapter.class.getCanonicalName();
-
     private List<KeywordSearch> mListData;
     private Context mContext;
     private LayoutInflater mLayoutInflater;

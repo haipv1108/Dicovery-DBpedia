@@ -1,8 +1,10 @@
 package com.brine.discovery.activity;
 
 import android.app.ProgressDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Handler;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.DefaultItemAnimator;
@@ -62,9 +64,11 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import cz.msebera.android.httpclient.Header;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener{
+public class MainActivity extends AppCompatActivity
+        implements View.OnClickListener, SelectedResultsAdapter.SelectedAdapterCallback{
     private static final String TAG = MainActivity.class.getCanonicalName();
     private static final int MAXITEM = 4;
+    final int DEFAULT_TIMEOUT = 20 * 1000;
 
     private EditText mEdtSearch;
     private ListView mListviewKS;
@@ -112,7 +116,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mKSAdapter = new KSAdapter(this, mKeywordSearchs);
         mListviewKS.setAdapter(mKSAdapter);
 
-        mRecommedAdapter = new SelectedResultsAdapter(this, mSelectedRecommends);
+        mRecommedAdapter = new SelectedResultsAdapter(this, mSelectedRecommends, this);
         mRecycleRecommed.setHasFixedSize(true);
         RecyclerView.LayoutManager layoutManagerRecommend =
                 new LinearLayoutManager(getApplicationContext(),
@@ -122,6 +126,26 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 new DividerItemDecoration(this, LinearLayout.HORIZONTAL));
         mRecycleRecommed.setItemAnimator(new DefaultItemAnimator());
         mRecycleRecommed.setAdapter(mRecommedAdapter);
+    }
+
+    @Override
+    public void onClick(final Recommend recommend) {
+        new AlertDialog.Builder(this)
+                .setMessage("Are you sure you want to delete " + recommend.getLabel())
+                .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        mSelectedRecommends.remove(recommend);
+                        mRecommedAdapter.notifyDataSetChanged();
+                        if(mSelectedRecommends.isEmpty()){
+                            hideSelectedRecommend();
+                        }
+                    }
+                })
+                .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                    }
+                })
+                .show();
     }
 
     @Override
@@ -188,14 +212,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void getDataRecomendation(String key){
-        if(key == null) return;
+        AsyncHttpClient client = new AsyncHttpClient();
+        client.setTimeout(DEFAULT_TIMEOUT);
         String url = "http://api.discoveryhub.co/recommendations/" + key;
-        StringRequest request = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
+        client.get(url, new AsyncHttpResponseHandler() {
             @Override
-            public void onResponse(String response) {
+            public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
+                String response = new String(responseBody);
                 mProgressDialog.dismiss();
                 try {
                     JSONArray jsonArray = new JSONArray(response);
+                    showLogAndToast(response);
                     if(jsonArray.length() == 1 &&
                             jsonArray.getJSONObject(0).getJSONArray("results").length() == 1){
                         showLogAndToast("No results. Try again!");
@@ -206,13 +233,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     e.printStackTrace();
                 }
             }
-        }, new Response.ErrorListener() {
+
             @Override
-            public void onErrorResponse(VolleyError error) {
+            public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
+                showLogAndToast("Error request to server. Try again!");
                 mProgressDialog.dismiss();
             }
         });
-        AppController.getInstance().addToRequestQueue(request, "recommendation");
     }
 
     private boolean checkRusultContent(String response){
@@ -248,13 +275,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             @Override
             public void afterTextChanged(final Editable editable) {
-//                Handler handler = new Handler();
-//                handler.postDelayed(new Runnable() {
-//                    @Override
-//                    public void run() {
                 String word = String.valueOf(editable.toString().trim());
                 if(word.length() >= 3){
-                    clearLookupResult();
+                    //clearLookupResult();
                     hideSelectedRecommend();
                     lookupUri(word);
                 }else{
@@ -263,8 +286,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         showSelectedRecommend();
                     }
                 }
-//                    }
-//                }, 1000);
             }
         });
 
@@ -341,36 +362,35 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             Element root = doc.getDocumentElement();
 
             NodeList nodeList = root.getChildNodes();
-            if(nodeList.getLength() > 0){
-                for(int i = 0; i < nodeList.getLength(); i++){
-                    Node node = nodeList.item(i);
-                    if(node instanceof Element){
-                        Element result = (Element) node;
-                        String label = result.getElementsByTagName("Label").item(0).getTextContent();
-                        String uri = result.getElementsByTagName("URI").item(0).getTextContent();
-                        String description = result.getElementsByTagName("Description")
-                                .item(0).getTextContent();
-
-                        if(uri.isEmpty() || description.isEmpty()) continue;
-                        NodeList childNodeList = result.getElementsByTagName("Class");
-                        String type = "";
-                        if(childNodeList.getLength() == 0){
-                            type = "Other";
-                        }else{
-                            String typeValue = ((Element)childNodeList.item(0)).getElementsByTagName("Label").item(0).getTextContent();
-                            type = firstUpperString(typeValue);
-                        }
-
-                        KeywordSearch ks = new KeywordSearch(label, uri, description, null, type);
-                        mKeywordSearchs.add(ks);
-                        mKSAdapter.notifyDataSetChanged();
-                    }
-                }
-                searchImageForUri();
-            }else{
-                showLogAndToast("No results");
+            if(nodeList.getLength() == 1){
+                showLogAndToast("No result. Try other keyword!");
                 return;
             }
+            for(int i = 0; i < nodeList.getLength(); i++){
+                Node node = nodeList.item(i);
+                if(node instanceof Element){
+                    Element result = (Element) node;
+                    String label = result.getElementsByTagName("Label").item(0).getTextContent();
+                    String uri = result.getElementsByTagName("URI").item(0).getTextContent();
+                    String description = result.getElementsByTagName("Description")
+                            .item(0).getTextContent();
+
+                    if(uri.isEmpty() || description.isEmpty()) continue;
+                    NodeList childNodeList = result.getElementsByTagName("Class");
+                    String type = "";
+                    if(childNodeList.getLength() == 0){
+                        type = "Other";
+                    }else{
+                        String typeValue = ((Element)childNodeList.item(0)).getElementsByTagName("Label").item(0).getTextContent();
+                        type = firstUpperString(typeValue);
+                    }
+
+                    KeywordSearch ks = new KeywordSearch(label, uri, description, null, type);
+                    mKeywordSearchs.add(ks);
+                    mKSAdapter.notifyDataSetChanged();
+                }
+            }
+            searchImageForUri();
         } catch (ParserConfigurationException | SAXException | IOException e) {
             e.printStackTrace();
         }

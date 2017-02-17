@@ -1,6 +1,7 @@
 package com.brine.discovery.util;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -214,14 +215,16 @@ public class DbpediaConstant {
     }};
 
     public static boolean isContext(String uriInput) {
-        List<String> contextMusic = new ArrayList<>();
-        contextMusic.add("Song");
-        contextMusic.add("Film");
-        contextMusic.add("Band");
-        contextMusic.add("Album");
-        contextMusic.add("MusicalArtist");
-        contextMusic.add("MusicGenre");
-        contextMusic.add("Actor");
+        List<String> contextMusic = Arrays.asList(
+                "Song",
+                "Film",
+                "Band",
+                "Album",
+                "MusicalArtist",
+                "MusicGenre",
+                "Actor",
+                "Person"
+        );
         for(String uri : contextMusic){
             if(uri.contains("http")){
                 String uriTemp = "http://dbpedia.org/resource/" + uri;

@@ -24,6 +24,9 @@ import com.brine.discovery.fragment.RecommendFragment;
 import com.brine.discovery.fragment.TopFragment;
 import com.brine.discovery.util.Config;
 import com.brine.discovery.util.DbpediaConstant;
+import com.loopj.android.http.AsyncHttpClient;
+import com.loopj.android.http.AsyncHttpResponseHandler;
+import com.loopj.android.http.RequestParams;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -36,10 +39,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import cz.msebera.android.httpclient.Header;
+
 public class RecommendActivity extends AppCompatActivity {
     private final static String TAG = RecommendActivity.class.getCanonicalName();
     public final static String DATA = "response";
     public final static float THRESHOLD = 0.0f;
+    final int DEFAULT_TIMEOUT = 20 * 1000;
 
     private ProgressDialog mProgressDialog;
 
@@ -135,35 +141,26 @@ public class RecommendActivity extends AppCompatActivity {
         mProgressDialog.setMessage("Loading...");
         mProgressDialog.show();
 
-        StringRequest request = new StringRequest(Request.Method.POST,
-                "http://api.discoveryhub.co/recommendations", new Response.Listener<String>() {
+        AsyncHttpClient client = new AsyncHttpClient();
+        RequestParams params = new RequestParams();
+        for(String param : recommends){
+            params.add("nodes[]", param);
+        }
+        showLog("Params: " + params.toString());
+        client.post(Config.DISCOVERYHUB_RECOMMEND_URL, params, new AsyncHttpResponseHandler() {
             @Override
-            public void onResponse(String response) {
+            public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
+                String response = new String(responseBody);
+                showLog(response);
                 parserPostDataRecommend(response);
             }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                showLogAndToast("No results! Try again");
-            }
-        }){
-            @Override
-            protected Map<String, String> getParams() throws AuthFailureError {
-                Map<String, String> params = new HashMap<>();
-                for(String param : recommends){
-                    params.put("nodes[]", param);
-                }
-                params.put("accessToken", Config.DISCOVEHUB_ACCESS_TOKEN);
-                showLog("Params: " + params.toString());
-                return params;
-            }
-        };
-        request.setRetryPolicy(new DefaultRetryPolicy(
-                10000,
-                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
-                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
 
-        AppController.getInstance().addToRequestQueue(request, "EXSearch");
+            @Override
+            public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
+                showLogAndToast("Error request to server. Try again!");
+                mProgressDialog.dismiss();
+            }
+        });
     }
 
     private void parserPostDataRecommend(String response){
@@ -180,32 +177,49 @@ public class RecommendActivity extends AppCompatActivity {
     }
 
     private void getDataRecomendation(String key){
-        if(key == null) return;
+        AsyncHttpClient client = new AsyncHttpClient();
+        client.setTimeout(DEFAULT_TIMEOUT);
         String url = "http://api.discoveryhub.co/recommendations/" + key;
-        showLog(url);
-        StringRequest request = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
+        client.get(url, new AsyncHttpResponseHandler() {
             @Override
-            public void onResponse(String response) {
+            public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
+                String response = new String(responseBody);
                 mProgressDialog.dismiss();
                 try {
                     JSONArray jsonArray = new JSONArray(response);
+                    showLogAndToast(response);
                     if(jsonArray.length() == 1 &&
                             jsonArray.getJSONObject(0).getJSONArray("results").length() == 1){
                         showLogAndToast("No results. Try again!");
-                    }else{
+                    }else if(checkRusultContent(response)){
                         showResultRecommendation(response);
                     }
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
             }
-        }, new Response.ErrorListener() {
+
             @Override
-            public void onErrorResponse(VolleyError error) {
+            public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
+                showLogAndToast("Error request to server. Try again!");
                 mProgressDialog.dismiss();
             }
         });
-        AppController.getInstance().addToRequestQueue(request, "recommendation");
+    }
+
+    private boolean checkRusultContent(String response){
+        try {
+            JSONArray jsonArray = new JSONArray(response);
+            for(int i = 0; i < jsonArray.length(); i++){
+                String uri = jsonArray.getJSONObject(i).getString("uri");
+                if(DbpediaConstant.isContext(uri)){
+                    return true;
+                }
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
     private void showResultRecommendation(String response){

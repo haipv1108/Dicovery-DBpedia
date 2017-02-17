@@ -26,10 +26,16 @@ public class SelectedResultsAdapter extends
     private static final String TAG = SelectedResultsAdapter.class.getCanonicalName();
     private Context mContext;
     private List<Recommend> mListData;
+    private SelectedAdapterCallback mCallback;
 
-    public SelectedResultsAdapter(Context context, List<Recommend> listData){
+    public interface SelectedAdapterCallback{
+        void onClick(Recommend recommend);
+    }
+    public SelectedResultsAdapter(Context context, List<Recommend> listData,
+                                  SelectedAdapterCallback callback){
         this.mContext = context;
         this.mListData = listData;
+        this.mCallback = callback;
     }
 
     @Override
@@ -66,7 +72,7 @@ public class SelectedResultsAdapter extends
         return mListData.size();
     }
 
-    class ViewHolder extends RecyclerView.ViewHolder{
+    class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
         TextView tvUri;
         TextView tvLabel;
         ImageView image;
@@ -78,6 +84,13 @@ public class SelectedResultsAdapter extends
             tvLabel = (TextView) view.findViewById(R.id.tv_label);
             image = (ImageView) view.findViewById(R.id.img_thumb);
             progressLoading = (ProgressBar) view.findViewById(R.id.progress_loading);
+            view.setOnClickListener(this);
+        }
+
+        @Override
+        public void onClick(View view) {
+            int position = getAdapterPosition();
+            mCallback.onClick(mListData.get(position));
         }
     }
 }
