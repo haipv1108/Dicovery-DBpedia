@@ -65,7 +65,7 @@ public class RecommendActivity extends AppCompatActivity {
         ViewPagerAdapter adapter = new ViewPagerAdapter(getSupportFragmentManager());
 
         String response = getIntent().getStringExtra(DATA);
-        adapter.addFrag(new TopFragment(), "TOP", response);
+        adapter.addFrag(new TopFragment(), "TOP", response, true);
         try {
             JSONArray jsonArray = new JSONArray(response);
             for(int i = jsonArray.length() - 1; i >=0; i--){
@@ -77,7 +77,7 @@ public class RecommendActivity extends AppCompatActivity {
                     label = uri;
                 }
                 if(DbpediaConstant.isContext(uri)){
-                    adapter.addFrag(new RecommendFragment(), label, results.toString());
+                    adapter.addFrag(new RecommendFragment(), label, results.toString(), false);
                 }
             }
         } catch (JSONException e) {
@@ -120,9 +120,10 @@ public class RecommendActivity extends AppCompatActivity {
             return mFragmentList.size();
         }
 
-        void addFrag(Fragment fragment, String title, String data) {
+        void addFrag(Fragment fragment, String title, String data, boolean type) {
             Bundle bundle = new Bundle();
             bundle.putString(RecommendFragment.DATA, data);
+            bundle.putBoolean(RecommendFragment.TOP_TYPE, type);
             fragment.setArguments(bundle);
             mFragmentList.add(fragment);
             mFragmentTitleList.add(title);

@@ -1,33 +1,28 @@
 package com.brine.discovery.fragment;
 
 import android.content.Intent;
-import android.media.Image;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.GridView;
-import android.widget.ImageView;
-import android.widget.Toast;
 
 import com.brine.discovery.R;
 import com.brine.discovery.activity.DetailsActivity;
-import com.brine.discovery.activity.MainActivity;
 import com.brine.discovery.activity.RecommendActivity;
 import com.brine.discovery.adapter.GridViewAdapter;
 import com.brine.discovery.model.Recommend;
-import com.squareup.picasso.Callback;
-import com.squareup.picasso.Picasso;
+import com.brine.discovery.util.DbpediaConstant;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -37,12 +32,15 @@ public class RecommendFragment extends Fragment
         implements GridViewAdapter.GridAdapterCallback{
     private final static String TAG = RecommendFragment.class.getCanonicalName();
     public final static String DATA = "data";
+    public final static String TOP_TYPE = "top";
+    private final static int MAXTOPRESULT = 20;
 
     private GridView mGridView;
 
     private List<Recommend> mRecommendDatas;
     private GridViewAdapter mGridAdapter;
-    private String response;
+    private String mResponse;
+    private boolean mTopType;
 
     public RecommendFragment() {
     }
@@ -50,7 +48,8 @@ public class RecommendFragment extends Fragment
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        response = getArguments().getString(DATA);
+        mResponse = getArguments().getString(DATA);
+        mTopType = getArguments().getBoolean(TOP_TYPE);
         return inflater.inflate(R.layout.fragment_recommendation, container, false);
     }
 
@@ -63,12 +62,57 @@ public class RecommendFragment extends Fragment
         mGridAdapter = new GridViewAdapter(getContext(), mRecommendDatas, this);
         mGridView.setAdapter(mGridAdapter);
 
-        parserResponseData();
+        if(mTopType){
+            parserTopResponseData();
+        }else{
+            parserNormalResponseData();
+        }
+    }
+    //======================TOP recommend=========================
+    private void parserTopResponseData(){
+        try {
+            JSONArray jsonArray = new JSONArray(mResponse);
+            for(int i = 0; i < jsonArray.length(); i++){
+                JSONArray results = jsonArray.getJSONObject(i).getJSONArray("results");
+                String uriType = results.getJSONObject(i).getString("uri");
+                if(DbpediaConstant.isContext(uriType)) continue;
+                for(int j = 0; j < results.length(); j++){
+                    final float threshold = BigDecimal.valueOf(results.getJSONObject(i)
+                            .getDouble("value")).floatValue();
+                    final String label = results.getJSONObject(j).getString("label");
+                    String abtract = results.getJSONObject(j).getString("abstract");
+                    final String uri = results.getJSONObject(j).getString("uri");
+                    final String image = results.getJSONObject(j).getString("image");
+                    if(label.equals("null") || abtract.equals("null"))
+                        continue;
+                    Recommend recommend = new Recommend(label, uri, image, threshold);
+                    insertTopRecommend(recommend);
+                }
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 
-    private void parserResponseData(){
+    private void insertTopRecommend(Recommend recommend){
+        mRecommendDatas.add(recommend);
+        Collections.sort(mRecommendDatas, new Comparator<Recommend>() {
+            @Override
+            public int compare(Recommend recommend, Recommend t1) {
+                return recommend.getThreshold() < t1.getThreshold()? 1 : -1;
+            }
+        });
+        if(mRecommendDatas.size() > MAXTOPRESULT){
+            mRecommendDatas.remove(mRecommendDatas.size() - 1);
+        }
+        mGridAdapter.notifyDataSetChanged();
+    }
+
+    //========================Normal recommend================
+
+    private void parserNormalResponseData(){
         try {
-            JSONArray jsonArray = new JSONArray(response);
+            JSONArray jsonArray = new JSONArray(mResponse);
             for(int i = 0; i < jsonArray.length(); i++){
                 String label = jsonArray.getJSONObject(i).getString("label");
                 String uri = jsonArray.getJSONObject(i).getString("uri");
@@ -77,12 +121,16 @@ public class RecommendFragment extends Fragment
                     continue;
                 }
                 Recommend recommend = new Recommend(label, uri, image);
-                mRecommendDatas.add(recommend);
-                mGridAdapter.notifyDataSetChanged();
+                insertNormalRecommend(recommend);
             }
         } catch (JSONException e) {
             e.printStackTrace();
         }
+    }
+
+    private void insertNormalRecommend(Recommend recommend){
+        mRecommendDatas.add(recommend);
+        mGridAdapter.notifyDataSetChanged();
     }
 
     @Override

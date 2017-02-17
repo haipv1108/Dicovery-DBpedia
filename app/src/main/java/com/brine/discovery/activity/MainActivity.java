@@ -222,7 +222,6 @@ public class MainActivity extends AppCompatActivity
                 mProgressDialog.dismiss();
                 try {
                     JSONArray jsonArray = new JSONArray(response);
-                    showLogAndToast(response);
                     if(jsonArray.length() == 1 &&
                             jsonArray.getJSONObject(0).getJSONArray("results").length() == 1){
                         showLogAndToast("No results. Try again!");
