@@ -24,7 +24,8 @@
         <activity android:name=".activity.RecommendActivity" />
         <activity android:name=".activity.DetailsActivity" />
         <activity android:name=".activity.GraphActivity" />
-        <activity android:name=".activity.YoutubePlayerActivity"></activity>
+        <activity android:name=".activity.YoutubePlayerActivity"
+            android:screenOrientation="landscape" />
     </application>
 
 </manifest>

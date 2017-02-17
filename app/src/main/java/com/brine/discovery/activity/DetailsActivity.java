@@ -4,6 +4,7 @@ import android.app.ProgressDialog;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.net.Uri;
 import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.v4.widget.NestedScrollView;
@@ -412,11 +413,14 @@ public class DetailsActivity extends AppCompatActivity
 
     @Override
     public void playVideoYoutube(String videoId) {
-        showLogAndToast("Play video id: " + videoId);
-        Intent intent = new Intent(this, YoutubePlayerActivity.class);
-        intent.putExtra(YoutubePlayerActivity.VIDEOID, videoId);
-        startActivity(intent);
-
+        Intent launchIntent = getPackageManager().getLaunchIntentForPackage("com.google.android.youtube");
+        if(launchIntent != null){
+            Intent intent = new Intent(this, YoutubePlayerActivity.class);
+            intent.putExtra(YoutubePlayerActivity.VIDEOID, videoId);
+            startActivity(intent);
+        }else{
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.youtube.com/watch?v=" + videoId)));
+        }
     }
 
     private String getLabelFromUri(String uri){

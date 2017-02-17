@@ -725,7 +725,6 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-
     private void showLog(String message){
         if(message != null){
             Log.d(TAG, message);
