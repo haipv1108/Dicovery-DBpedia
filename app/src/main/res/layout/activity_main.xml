@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/activity_main"
     android:layout_width="match_parent"
@@ -8,6 +8,7 @@
     android:paddingLeft="@dimen/_3sdp"
     android:paddingRight="@dimen/_3sdp"
     android:paddingTop="@dimen/_3sdp"
+    android:orientation="vertical"
     tools:context="com.brine.discovery.activity.MainActivity">
 
     <RelativeLayout
@@ -25,7 +26,7 @@
             android:layout_height="wrap_content"
             android:layout_alignParentLeft="true"
             android:layout_centerVertical="true"
-            android:src="@drawable/btn_search"/>
+            android:src="@drawable/btn_arrow_down"/>
 
         <EditText
             android:id="@+id/edt_search"
@@ -38,6 +39,14 @@
             android:imeOptions="actionDone"
             android:textAppearance="@android:style/TextAppearance.Material.Body1"
             android:hint="Search text"/>
+
+        <ImageView
+            android:id="@+id/img_search"
+            android:layout_alignParentRight="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:src="@drawable/btn_search" />
 
     </RelativeLayout>
 
@@ -67,12 +76,18 @@
 
     </RelativeLayout>
 
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/recycle_fsresult"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingLeft="@dimen/_5sdp"
+        android:paddingRight="@dimen/_5sdp"/>
+
     <ListView
         android:id="@+id/lv_keyword_search"
-        android:layout_below="@+id/search_area"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:paddingLeft="@dimen/_5sdp"
         android:paddingRight="@dimen/_5sdp"/>
 
-</RelativeLayout>
+</LinearLayout>

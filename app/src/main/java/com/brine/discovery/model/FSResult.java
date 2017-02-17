@@ -8,15 +8,13 @@ public class FSResult {
     private String uri;
     private String label;
     private String description;
-    private double score;
-    private double rank;
+    private String thumbnail;
 
-    public FSResult(String uri, String label, String description, double score, double rank){
+    public FSResult(String uri, String label, String description, String thumbnail){
         this.uri = uri;
         this.label = label;
         this.description = description;
-        this.score = score;
-        this.rank = rank;
+        this.thumbnail = thumbnail;
     }
 
     public String getLabel(){
@@ -31,11 +29,11 @@ public class FSResult {
         return description;
     }
 
-    public double getScore(){
-        return score;
+    public String getThumbnail() {
+        return thumbnail;
     }
 
-    public double getRank(){
-        return rank;
+    public void setThumbnail(String thumb){
+        this.thumbnail = thumb.replace("http://", "https://");
     }
 }

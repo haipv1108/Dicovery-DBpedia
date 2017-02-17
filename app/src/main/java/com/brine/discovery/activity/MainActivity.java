@@ -3,7 +3,6 @@ package com.brine.discovery.activity;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.os.Handler;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -14,12 +13,15 @@ import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.PopupMenu;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
@@ -29,9 +31,10 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.brine.discovery.AppController;
 import com.brine.discovery.R;
+import com.brine.discovery.adapter.FSAdapter;
 import com.brine.discovery.adapter.KSAdapter;
 import com.brine.discovery.adapter.SelectedResultsAdapter;
-import com.brine.discovery.fragment.RecommendFragment;
+import com.brine.discovery.model.FSResult;
 import com.brine.discovery.model.KeywordSearch;
 import com.brine.discovery.model.Recommend;
 import com.brine.discovery.util.Config;
@@ -65,10 +68,15 @@ import javax.xml.parsers.ParserConfigurationException;
 import cz.msebera.android.httpclient.Header;
 
 public class MainActivity extends AppCompatActivity
-        implements View.OnClickListener, SelectedResultsAdapter.SelectedAdapterCallback{
+        implements View.OnClickListener, SelectedResultsAdapter.SelectedAdapterCallback,
+        FSAdapter.FSAdapterCallback{
     private static final String TAG = MainActivity.class.getCanonicalName();
     private static final int MAXITEM = 4;
-    final int DEFAULT_TIMEOUT = 20 * 1000;
+    private static final int DEFAULT_TIMEOUT = 20 * 1000;
+
+    private static final int LOOKUP_URI = 1;
+    private static final int FACTED_SEARCH = 2;
+    private static final int SLIDING_WINDOW = 3;
 
     private EditText mEdtSearch;
     private ListView mListviewKS;
@@ -81,13 +89,28 @@ public class MainActivity extends AppCompatActivity
     private List<Recommend> mSelectedRecommends;
     private ProgressDialog mProgressDialog;
 
+    private FSAdapter mFSAdapter;
+    private List<FSResult> mFSResults;
+    private RecyclerView mRecyclerFS;
+    private ImageView mImgSearchOption;
+    private ImageView mImgSearch;
+
+    private int typeSearch = LOOKUP_URI;
+
+    private interface TypeSearchCallBack {
+        void changeTypeSearch();
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         initUI();
         init();
-        listeningEdtSearch();
+
+        if(typeSearch == LOOKUP_URI){
+            listeningEdtSearch();
+        }
     }
 
     private void initUI(){
@@ -97,6 +120,42 @@ public class MainActivity extends AppCompatActivity
         ImageButton mBtnEXSearch = (ImageButton) findViewById(R.id.btn_EXSearch);
         mBtnEXSearch.setOnClickListener(this);
         mRltSelectedRecommend = (RelativeLayout) findViewById(R.id.rlt_seledted_recommend);
+
+        mRecyclerFS = (RecyclerView)findViewById(R.id.recycle_fsresult);
+        mImgSearchOption = (ImageView) findViewById(R.id.img_search_option);
+        mImgSearch = (ImageView) findViewById(R.id.img_search);
+        mImgSearchOption.setOnClickListener(this);
+        mImgSearch.setOnClickListener(this);
+    }
+
+    private TypeSearchCallBack callBack = new TypeSearchCallBack() {
+        @Override
+        public void changeTypeSearch() {
+            resetSearch();
+            switch (typeSearch){
+                case LOOKUP_URI:
+                    mKeywordSearchs.clear();
+                    mKSAdapter.notifyDataSetChanged();
+                    mListviewKS.setVisibility(View.VISIBLE);
+                    mRecyclerFS.setVisibility(View.GONE);
+                    listeningEdtSearch();
+                    break;
+                case FACTED_SEARCH:
+                    mFSResults.clear();
+                    mFSAdapter.notifyDataSetChanged();
+                    mListviewKS.setVisibility(View.GONE);
+                    mRecyclerFS.setVisibility(View.VISIBLE);
+                    break;
+                case SLIDING_WINDOW:
+                    break;
+                default:
+                    break;
+            }
+        }
+    };
+
+    private void resetSearch(){
+        mEdtSearch.setText("");
     }
 
     private void hideSelectedRecommend(){
@@ -126,6 +185,18 @@ public class MainActivity extends AppCompatActivity
                 new DividerItemDecoration(this, LinearLayout.HORIZONTAL));
         mRecycleRecommed.setItemAnimator(new DefaultItemAnimator());
         mRecycleRecommed.setAdapter(mRecommedAdapter);
+
+        mFSResults = new ArrayList<>();
+        mFSAdapter = new FSAdapter(this, mFSResults, this);
+        mRecyclerFS.setHasFixedSize(true);
+        RecyclerView.LayoutManager layoutManagerFS =
+                new LinearLayoutManager(getApplicationContext(),
+                        LinearLayoutManager.VERTICAL, false);
+        mRecyclerFS.setLayoutManager(layoutManagerFS);
+        mRecyclerFS.addItemDecoration(
+                new DividerItemDecoration(getApplicationContext(), LinearLayout.VERTICAL));
+        mRecyclerFS.setItemAnimator(new DefaultItemAnimator());
+        mRecyclerFS.setAdapter(mFSAdapter);
     }
 
     @Override
@@ -159,6 +230,31 @@ public class MainActivity extends AppCompatActivity
                 final List<String> inputUris = convertToListString(mSelectedRecommends);
                 EXSearch(inputUris);
                 break;
+            case R.id.img_search_option:
+                showPopupSearchOption();
+                break;
+            case R.id.img_search:
+                String keywords = getKeywordInput();
+                if(keywords != null){
+                    if(typeSearch == FACTED_SEARCH){
+                        showLogAndToast("Tim kiem " + keywords);
+                        facetedSearch(keywords, "");
+                    }else {
+                        slidingWindow(keywords);
+                    }
+                }
+                break;
+        }
+    }
+
+    @Override
+    public void onClickFS(FSResult fsResult) {
+        if(!isSelectedItem(fsResult.getUri())){
+            Recommend recommend = new Recommend(
+                    fsResult.getLabel(), fsResult.getUri(), fsResult.getThumbnail());
+            addSelectedRecommend(recommend);
+        }else{
+            showLogAndToast("Item added. Please choice other item!");
         }
     }
 
@@ -168,6 +264,167 @@ public class MainActivity extends AppCompatActivity
             inputUris.add(node.getUri());
         }
         return inputUris;
+    }
+
+    private void showPopupSearchOption(){
+        PopupMenu popupMenu = new PopupMenu(this, mImgSearchOption);
+        popupMenu.getMenuInflater().inflate(R.menu.menu_search_option, popupMenu.getMenu());
+        popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                switch (item.getItemId()){
+                    case R.id.menu_lookup_uri:
+                        if(typeSearch != LOOKUP_URI){
+                            typeSearch = LOOKUP_URI;
+                            callBack.changeTypeSearch();
+                        }
+                        return true;
+                    case R.id.menu_facted_search:
+                        if(typeSearch != FACTED_SEARCH){
+                            typeSearch = FACTED_SEARCH;
+                            callBack.changeTypeSearch();
+                        }
+                        return true;
+                    case R.id.menu_sliding_window:
+                        if(typeSearch != SLIDING_WINDOW){
+                            typeSearch = SLIDING_WINDOW;
+                            callBack.changeTypeSearch();
+                        }
+                        return true;
+                }
+                return false;
+            }
+        });
+        popupMenu.show();
+    }
+
+    private String getKeywordInput(){
+        String keywords = mEdtSearch.getText().toString().trim();
+        if(keywords.length() == 0){
+            mEdtSearch.setError("Keyword cannot empty!");
+            return null;
+        }
+        return keywords;
+    }
+
+    private void facetedSearch(String keywords, String optionSearch){
+        mFSResults.clear();
+        mFSAdapter.notifyDataSetChanged();
+
+        String url = Utils.createUrlFacetedSearch(keywords, optionSearch);
+
+        final ProgressDialog progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("Loading...");
+        progressDialog.show();
+
+        StringRequest stringRequest = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                if(progressDialog.isShowing()){
+                    progressDialog.dismiss();
+                }
+                parsefacetedSeachResult(response);
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                if(progressDialog.isShowing()){
+                    progressDialog.dismiss();
+                }
+                showLog("Error: " + error.getMessage());
+            }
+        });
+        AppController.getInstance().addToRequestQueue(stringRequest, "factedsearch");
+    }
+
+    private void parsefacetedSeachResult(String response){
+        try {
+            JSONObject jsonObject = new JSONObject(response);
+            JSONArray data = jsonObject.getJSONObject("results").getJSONArray("bindings");
+            if(data.length() == 0){
+                showLogAndToast("No results");
+            }else{
+                for(int i = 0; i < data.length(); i++){
+                    JSONObject element = data.getJSONObject(i);
+                    String uri = element.getJSONObject("c1").getString("value");
+
+                    List<String> splitUri = Arrays.asList(uri.split("/"));
+                    String localName = splitUri.get(splitUri.size()-1);
+                    String label = localName.replace("_", " ");
+                    String description = element.getJSONObject("c2").getString("value");
+
+                    FSResult result = new FSResult(uri, label, description, null);
+                    updateFSResult(result);
+                }
+                searchImageForUriFSSearch();
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void updateFSResult(FSResult result){
+        mFSResults.add(result);
+        mFSAdapter.notifyDataSetChanged();
+    }
+
+    private void searchImageForUriFSSearch(){
+        if(mFSResults.size() == 0){
+            return;
+        }
+        String query = "SELECT ?uri ?img\n" +
+                "WHERE\n" +
+                "{\n" +
+                "?uri <http://dbpedia.org/ontology/thumbnail> ?img .\n" +
+                "FILTER (";
+        for(int i = 0; i < mFSResults.size() - 1; i++){
+            query += " ?uri = <" + mFSResults.get(i).getUri() + "> || ";
+        }
+        query += " ?uri = <" + mFSResults.get(mFSResults.size() - 1) + "> ) }";
+        String url = Utils.createUrlDbpedia(query);
+
+        StringRequest request = new StringRequest(Request.Method.GET, url,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        try {
+                            JSONObject jsonObject = new JSONObject(response);
+                            JSONArray data = jsonObject.getJSONObject("results").getJSONArray("bindings");
+                            if(data.length() == 0){
+                                showLog("No result");
+                            }else{
+                                for(int i = 0; i < data.length(); i++){
+                                    JSONObject element = data.getJSONObject(i);
+                                    String uri = element.getJSONObject("uri").getString("value");
+                                    String thumb = element.getJSONObject("img").getString("value");
+                                    insertFSThumbnail(uri, thumb);
+                                }
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                },  new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                showLog("Error: " + error.getMessage());
+            }
+        });
+        AppController.getInstance().addToRequestQueue(request, "lookup");
+    }
+
+    private void insertFSThumbnail(String uri, String thumb){
+        for(FSResult fs : mFSResults){
+            if(fs.getUri().equals(uri)){
+                fs.setThumbnail(thumb);
+                mKSAdapter.notifyDataSetChanged();
+                return;
+            }
+        }
+    }
+
+    private void slidingWindow(String keywords){
+
     }
 
     private void EXSearch(final List<String> recommends){
@@ -274,14 +531,16 @@ public class MainActivity extends AppCompatActivity
 
             @Override
             public void afterTextChanged(final Editable editable) {
-                String word = String.valueOf(editable.toString().trim());
-                if(word.length() >= 3){
-                    hideSelectedRecommend();
-                    lookupUri(word);
-                }else{
-                    clearLookupResult();
-                    if(mSelectedRecommends.size() > 0){
-                        showSelectedRecommend();
+                if(typeSearch == LOOKUP_URI){
+                    String word = String.valueOf(editable.toString().trim());
+                    if(word.length() >= 3){
+                        hideSelectedRecommend();
+                        lookupUri(word);
+                    }else{
+                        clearLookupResult();
+                        if(mSelectedRecommends.size() > 0){
+                            showSelectedRecommend();
+                        }
                     }
                 }
             }
@@ -295,14 +554,7 @@ public class MainActivity extends AppCompatActivity
                     Recommend recommend = new Recommend(
                             keywordSearch.getLabel(), keywordSearch.getUri(), keywordSearch.getThumb());
 
-                    if(mSelectedRecommends.size() == MAXITEM){
-                        mSelectedRecommends.remove(mSelectedRecommends.size() - 1);
-                        mRecommedAdapter.notifyDataSetChanged();
-                        showLogAndToast("Max item is 4!");
-                    }
-                    mSelectedRecommends.add(recommend);
-                    mRecommedAdapter.notifyDataSetChanged();
-                    showSelectedRecommend();
+                    addSelectedRecommend(recommend);
                     clearLookupResult();
                     mEdtSearch.setText("");
                 }else{
@@ -310,6 +562,17 @@ public class MainActivity extends AppCompatActivity
                 }
             }
         });
+    }
+
+    private void addSelectedRecommend(Recommend recommend){
+        if(mSelectedRecommends.size() == MAXITEM){
+            mSelectedRecommends.remove(mSelectedRecommends.size() - 1);
+            mRecommedAdapter.notifyDataSetChanged();
+            showLogAndToast("Max item is 4!");
+        }
+        mSelectedRecommends.add(recommend);
+        mRecommedAdapter.notifyDataSetChanged();
+        showSelectedRecommend();
     }
 
     private boolean isSelectedItem(String uri){
@@ -388,7 +651,7 @@ public class MainActivity extends AppCompatActivity
                     mKSAdapter.notifyDataSetChanged();
                 }
             }
-            searchImageForUri();
+            searchImageForUriKSSearch();
         } catch (ParserConfigurationException | SAXException | IOException e) {
             e.printStackTrace();
         }
@@ -405,7 +668,7 @@ public class MainActivity extends AppCompatActivity
         return result.trim();
     }
 
-    private void searchImageForUri(){
+    private void searchImageForUriKSSearch(){
         if(mKeywordSearchs.size() == 0){
             return;
         }

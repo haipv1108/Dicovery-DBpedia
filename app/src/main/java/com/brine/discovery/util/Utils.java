@@ -4,6 +4,7 @@ import android.util.Log;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.Arrays;
 import java.util.List;
 
 import static com.brine.discovery.util.Config.BASE_URL_DBPEDIA;
@@ -90,6 +91,68 @@ public class Utils {
         }
         showLog("soundcloud url: " + url);
         return url;
+    }
+
+    public static String createUrlFacetedSearch(String keyword, String optionSearch){
+        String query = createQueryFacetedSearch(keyword, optionSearch);
+        String url = "";
+        try {
+            url = "http://dbpedia.org/sparql?default-graph-uri=&query=" + URLEncoder.encode(query, "UTF-8") + RESULT_JSON_TYPE;
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        showLog(url);
+        return url;
+    }
+
+    private static String createQueryFacetedSearch(String keyword, String optionSearch){
+        String bifVectorParams = getBifVectorParams(keyword);
+        String bifContainParams = getBifContainParams(keyword);
+
+        String query = "     select ?s1 as ?c1, (bif:search_excerpt (bif:vector (" + bifVectorParams + "), ?o1)) as ?c2, ?sc, ?rank, ?g where {{{ select ?s1, (?sc * 3e-1) as ?sc, ?o1, (sql:rnk_scale (<LONG::IRI_RANK> (?s1))) as ?rank, ?g where  \n" +
+                "  { \n" +
+                "    quad map virtrdf:DefaultQuadMap \n" +
+                "    { \n" +
+                "      graph ?g \n" +
+                "      { \n" +
+                "         ?s1 ?s1textp ?o1 .\n" +
+                "        ?o1 bif:contains  '(" + bifContainParams + ")'  option (score ?sc)  .\n" +
+                "        \n" +
+                "      }\n" +
+                "     }\n" +
+                "    "  + optionSearch + "\n" +
+                "  }\n" +
+                " order by desc (?sc * 3e-1 + sql:rnk_scale (<LONG::IRI_RANK> (?s1)))  limit 30  offset 0 }}} ";
+        showLog(query);
+        return query;
+    }
+
+    private static String getBifVectorParams(String keywordSearch){
+        List<String> listWord = Arrays.asList(keywordSearch.split(" "));
+        String bifVectorParams = "";
+        for(int i = 0; i < listWord.size(); i++){
+            if(bifVectorParams.length() == 0){
+                bifVectorParams += "'" + listWord.get(i).toUpperCase() + "'";
+            }else {
+                bifVectorParams += ", " + "'" + listWord.get(i).toUpperCase() + "'";
+            }
+        }
+        showLog("Vector param: " + bifVectorParams);
+        return bifVectorParams;
+    }
+
+    private static String getBifContainParams(String keywordSearch){
+        List<String> listWord = Arrays.asList(keywordSearch.split(" "));
+        String bifContainParams = "";
+        for(int i = 0; i < listWord.size(); i++){
+            if(bifContainParams.length() == 0){
+                bifContainParams += listWord.get(i).toUpperCase();
+            }else {
+                bifContainParams += " AND " + listWord.get(i).toUpperCase();
+            }
+        }
+        showLog("Contain param: " + bifContainParams);
+        return bifContainParams;
     }
 
     private static void showLog(String message){

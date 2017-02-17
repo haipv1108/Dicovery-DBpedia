@@ -15,6 +15,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -388,7 +389,8 @@ public class DetailsActivity extends AppCompatActivity
             recyclerView.setItemAnimator(new DefaultItemAnimator());
             recyclerView.setAdapter(youtubeAdapter);
 
-            mLinearContentDetails.addView(recyclerView, -1, -2);
+            mLinearContentDetails.addView(recyclerView, ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT);
 
             for(int i = 0; i < items.length(); i++){
                 JSONObject item = items.getJSONObject(i);
@@ -471,7 +473,8 @@ public class DetailsActivity extends AppCompatActivity
             recyclerView.setItemAnimator(new DefaultItemAnimator());
             recyclerView.setAdapter(SCAdapter);
 
-            mLinearContentDetails.addView(recyclerView, -1, -2);
+            mLinearContentDetails.addView(recyclerView, ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT);
 
             for(int i = 0; i < data.length(); i++){
                 JSONObject item = data.getJSONObject(i);

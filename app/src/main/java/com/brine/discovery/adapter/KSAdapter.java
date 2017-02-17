@@ -1,20 +1,16 @@
 package com.brine.discovery.adapter;
 
 import android.content.Context;
-import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
-import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.brine.discovery.R;
 import com.brine.discovery.model.KeywordSearch;
-import com.brine.discovery.model.Recommend;
 import com.squareup.picasso.Callback;
 import com.squareup.picasso.Picasso;
 
@@ -55,7 +51,7 @@ public class KSAdapter extends BaseAdapter {
         final ViewHolder holder;
         if(view == null){
             view = mLayoutInflater.inflate(
-                    R.layout.ks_item, null);
+                    R.layout.ks_item_row, null);
             holder = new ViewHolder();
             holder.tvUri = (TextView) view.findViewById(R.id.tv_uri);
             holder.tvLabel = (TextView) view.findViewById(R.id.tv_label);

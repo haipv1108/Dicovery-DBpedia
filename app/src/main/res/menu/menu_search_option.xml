@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/menu_lookup_uri"
+            android:title="@string/menu_lookup_uri" />
+        <item
+            android:id="@+id/menu_facted_search"
+            android:title="@string/menu_facted_search"/>
+        <item
+            android:id="@+id/menu_sliding_window"
+            android:title="@string/menu_sliding_window"/>
+    </group>
+</menu>
