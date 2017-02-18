@@ -12,6 +12,7 @@ public class Config {
     public static final String GOOGLE_URL = "https://www.googleapis.com/youtube/v3/search?part=snippet&start-index=1&max-results=10&";
     public static final String YOUTUBE_API_KEY = "AIzaSyC9VUA2X7BW7u-_oyfYLoGxBvpGjqp9FTE";
     public static final String SOUNDCLOUD_URL = "http://api.soundcloud.com/tracks?license=cc-by-sa&limit=10&client_id=74476531297b5bf0767e0867e0291972&format=json&_status_code_map[302]=200&q=";
+    public static final String SOUNDCLOUD_CLIENT_ID = "74476531297b5bf0767e0867e0291972";
     public static final String DISCOVERYHUB_RECOMMEND_URL = "http://api.discoveryhub.co/recommendations";
     public static final String DISCOVERYHUB_GRAPH_API = "http://semreco.inria.fr/hub/search/graph";
 

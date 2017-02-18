@@ -4,7 +4,10 @@ import android.app.ProgressDialog;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.v4.widget.NestedScrollView;
@@ -33,6 +36,7 @@ import com.brine.discovery.adapter.YoutubeAdapter;
 import com.brine.discovery.model.SCMusic;
 import com.brine.discovery.model.TypeUri;
 import com.brine.discovery.model.YoutubeVideo;
+import com.brine.discovery.util.Config;
 import com.brine.discovery.util.Utils;
 import com.brine.discovery.view.OnSwipeTouchListener;
 import com.ms.square.android.expandabletextview.ExpandableTextView;
@@ -42,6 +46,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
@@ -70,6 +75,8 @@ public class DetailsActivity extends AppCompatActivity
     private int countRequestCompleted = 0;
     private int maxRequest = 0;
     private boolean isTypeValue = false;
+
+    private MediaPlayer mediaPlayer;
 
     private interface RequestCallBack{
         void startRequestToServer();
@@ -145,7 +152,8 @@ public class DetailsActivity extends AppCompatActivity
     }
 
     private void init(){
-
+        mediaPlayer = new MediaPlayer();
+        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
     }
 
     private RequestCallBack callBack = new RequestCallBack() {
@@ -499,7 +507,69 @@ public class DetailsActivity extends AppCompatActivity
 
     @Override
     public void playSoundCloudMusic(String streamUrl) {
-        showLogAndToast("Play music : " + streamUrl);
+        if(mediaPlayer.isPlaying()){
+            mediaPlayer.pause();
+            mediaPlayer.reset();
+        }
+
+        String musicUrl = streamUrl + "?client_id=" + Config.SOUNDCLOUD_CLIENT_ID;
+        new SCPlayer().execute(musicUrl);
+    }
+
+    class SCPlayer extends AsyncTask<String, Void, Boolean>{
+        private ProgressDialog progress;
+
+        @Override
+        protected Boolean doInBackground(String... params) {
+            Boolean prepared = false;
+            try {
+                mediaPlayer.setDataSource(params[0]);
+                mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                    @Override
+                    public void onCompletion(MediaPlayer mediaPlayer) {
+                        mediaPlayer.stop();
+                        mediaPlayer.reset();
+                    }
+                });
+                mediaPlayer.prepare();
+                prepared = true;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return prepared;
+        }
+
+        @Override
+        protected void onPostExecute(Boolean result) {
+            super.onPostExecute(result);
+            if (progress.isShowing()) {
+                progress.cancel();
+            }
+            Log.d("Prepared", "//" + result);
+            mediaPlayer.start();
+        }
+
+        public SCPlayer() {
+            progress = new ProgressDialog(DetailsActivity.this);
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            super.onPreExecute();
+            this.progress.setMessage("Buffering...");
+            this.progress.show();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (mediaPlayer != null) {
+            mediaPlayer.reset();
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
     }
 
     private void getFmMusicData(){

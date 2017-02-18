@@ -10,7 +10,7 @@
         android:layout_width="@dimen/_90sdp"
         android:layout_height="@dimen/_90sdp">
 
-        <ImageViewgt
+        <ImageView
             android:id="@+id/img_thumb"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -52,6 +52,4 @@
             android:text="@string/tv_option"
             android:textStyle="bold"/>
     </RelativeLayout>
-
-
 </LinearLayout>
