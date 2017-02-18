@@ -62,7 +62,6 @@ public class DetailsActivity extends AppCompatActivity
         implements YoutubeAdapter.YoutubeAdapterCallBack, SoundCloudAdapter.SCAdapterCallback{
     private static final String TAG = DetailsActivity.class.getCanonicalName();
     public static final String DATA = "uri";
-    private static final int NUMBER_REQUEST = 3;
 
     private CollapsingToolbarLayout mCollapsingToolbar;
     private ImageView mImgDetails;

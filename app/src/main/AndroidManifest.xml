@@ -14,20 +14,24 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/MyMaterialTheme">
-        <activity android:name=".activity.MainActivity">
+
+        <activity android:name=".activity.SplashActivity"
+            android:screenOrientation="portrait"
+            android:theme="@android:style/Theme.Black.NoTitleBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".activity.MainActivity" />
         <activity android:name=".activity.RecommendActivity" />
         <activity android:name=".activity.DetailsActivity" />
         <activity android:name=".activity.GraphActivity" />
         <activity
             android:name=".activity.YoutubePlayerActivity"
             android:screenOrientation="landscape" />
-        <activity android:name=".activity.SCPlayerActivity"
+        <activity
+            android:name=".activity.SCPlayerActivity"
             android:launchMode="singleTop"
             android:screenOrientation="portrait" />
     </application>
