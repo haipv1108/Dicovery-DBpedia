@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "187409725375",
+    "firebase_url": "https://discoveryhub-c7f2e.firebaseio.com",
+    "project_id": "discoveryhub-c7f2e",
+    "storage_bucket": "discoveryhub-c7f2e.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:187409725375:android:06226b1f94a2f854",
+        "android_client_info": {
+          "package_name": "com.brine.discovery"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "187409725375-tg3guer0qn8v2jimkmvmnrer9fe98mag.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyANd-UPRuAN_JNcVFASd-X4pSBqKrph_OY"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

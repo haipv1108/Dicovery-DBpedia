@@ -227,8 +227,7 @@ public class MainActivity extends AppCompatActivity
                     showLogAndToast("Please select uri!");
                     return;
                 }
-                final List<String> inputUris = convertToListString(mSelectedRecommends);
-                EXSearch(inputUris);
+                EXSearch(mSelectedRecommends);
                 break;
             case R.id.img_search_option:
                 showPopupSearchOption();
@@ -256,14 +255,6 @@ public class MainActivity extends AppCompatActivity
         }else{
             showLogAndToast("Item added. Please choice other item!");
         }
-    }
-
-    private List<String> convertToListString(List<Recommend> recommends){
-        List<String> inputUris = new ArrayList<>();
-        for(Recommend node : recommends){
-            inputUris.add(node.getUri());
-        }
-        return inputUris;
     }
 
     private void showPopupSearchOption(){
@@ -427,7 +418,7 @@ public class MainActivity extends AppCompatActivity
 
     }
 
-    private void EXSearch(final List<String> recommends){
+    private void EXSearch(final List<Recommend> recommends){
         AppController.getInstance().setUriDecovery(recommends);
         mProgressDialog = new ProgressDialog(this);
         mProgressDialog.setMessage("Loading...");
@@ -435,8 +426,8 @@ public class MainActivity extends AppCompatActivity
 
         AsyncHttpClient client = new AsyncHttpClient();
         RequestParams params = new RequestParams();
-        for(String param : recommends){
-            params.add("nodes[]", param);
+        for(Recommend param : recommends){
+            params.add("nodes[]", param.getUri());
         }
         showLog("Params: " + params.toString());
         client.post(Config.DISCOVERYHUB_RECOMMEND_URL, params, new AsyncHttpResponseHandler() {
@@ -472,6 +463,7 @@ public class MainActivity extends AppCompatActivity
         AsyncHttpClient client = new AsyncHttpClient();
         client.setTimeout(DEFAULT_TIMEOUT);
         String url = "http://api.discoveryhub.co/recommendations/" + key;
+        showLog("RECOMMEND API: " + url);
         client.get(url, new AsyncHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {

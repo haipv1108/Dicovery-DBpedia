@@ -120,8 +120,8 @@ public class TopFragment extends Fragment implements GridViewAdapter.GridAdapter
 
     @Override
     public void exSearch(Recommend recommend) {
-        List<String> recommends = new ArrayList<>();
-        recommends.add(recommend.getUri());
-        ((RecommendActivity)getActivity()).EXSearch(recommends);
+//        List<String> recommends = new ArrayList<>();
+//        recommends.add(recommend.getUri());
+//        ((RecommendActivity)getActivity()).EXSearch(recommends);
     }
 }

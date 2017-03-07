@@ -8,6 +8,7 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.VolleyLog;
 import com.android.volley.toolbox.Volley;
+import com.brine.discovery.model.Recommend;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,8 +22,8 @@ public class AppController extends Application {
 
     private static AppController sInstance;
     private RequestQueue mRequestQueue;
-    private List<String> mCurrentUriDecovery;
-    private List<String> mPrevUriDecovery;
+    private List<Recommend> mCurrentUriDecovery;
+    private List<Recommend> mPrevUriDecovery;
 
     @Override
     public void onCreate() {
@@ -61,7 +62,7 @@ public class AppController extends Application {
         }
     }
 
-    public void setUriDecovery(List<String> inputUris){
+    public void setUriDecovery(List<Recommend> inputUris){
         mPrevUriDecovery.clear();
         mPrevUriDecovery.addAll(mCurrentUriDecovery);
 
@@ -71,11 +72,34 @@ public class AppController extends Application {
         Log.d(TAG, "URIAppController Curr " + mCurrentUriDecovery.toString());
     }
 
-    public List<String> getCurrentUriDecovery(){
-        return mCurrentUriDecovery;
+    public List<Recommend> getCurrentUriDecovery(){
+        if(mPrevUriDecovery.isEmpty()){
+            return mCurrentUriDecovery;
+        }
+        List<Recommend> currents = new ArrayList<>();
+        for(Recommend node : mCurrentUriDecovery){
+            boolean isContained = false;
+            for(Recommend node1 : mPrevUriDecovery){
+                if(node.getUri().toLowerCase().equals(node1.getUri().toLowerCase())){
+                   isContained = true;
+                }
+            }
+            if(!isContained){
+                currents.add(node);
+            }
+        }
+        return currents;
     }
 
     public List<String> getFromUriDecovery(){
-        return mCurrentUriDecovery;
+        return convertToListString(mCurrentUriDecovery);
+    }
+
+    private List<String> convertToListString(List<Recommend> recommends){
+        List<String> inputUris = new ArrayList<>();
+        for(Recommend node : recommends){
+            inputUris.add(node.getUri());
+        }
+        return inputUris;
     }
 }

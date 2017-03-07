@@ -144,8 +144,7 @@ public class RecommendActivity extends AppCompatActivity implements MessageObser
         }
     }
 
-
-    public void EXSearch(final List<String> recommends){
+    public void EXSearch(final List<Recommend> recommends){
         AppController.getInstance().setUriDecovery(recommends);
         mProgressDialog = new ProgressDialog(this);
         mProgressDialog.setMessage("Loading...");
@@ -153,8 +152,8 @@ public class RecommendActivity extends AppCompatActivity implements MessageObser
 
         AsyncHttpClient client = new AsyncHttpClient();
         RequestParams params = new RequestParams();
-        for(String param : recommends){
-            params.add("nodes[]", param);
+        for(Recommend param : recommends){
+            params.add("nodes[]", param.getUri());
         }
         showLog("Params: " + params.toString());
         client.post(Config.DISCOVERYHUB_RECOMMEND_URL, params, new AsyncHttpResponseHandler() {
@@ -190,6 +189,7 @@ public class RecommendActivity extends AppCompatActivity implements MessageObser
         AsyncHttpClient client = new AsyncHttpClient();
         client.setTimeout(DEFAULT_TIMEOUT);
         String url = "http://api.discoveryhub.co/recommendations/" + key;
+        showLog("RECOMMEND API: " + url);
         client.get(url, new AsyncHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {

@@ -20,6 +20,7 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
+import com.brine.discovery.AppController;
 import com.brine.discovery.R;
 import com.brine.discovery.activity.DetailsActivity;
 import com.brine.discovery.activity.RecommendActivity;
@@ -62,6 +63,7 @@ public class RecommendFragment extends Fragment
     private SelectedResultsAdapter mRecommedAdapter;
     private String mResponse;
     private boolean mTopType;
+    private int lengthCurrentUri = 0;
 
     public RecommendFragment() {
     }
@@ -80,6 +82,7 @@ public class RecommendFragment extends Fragment
 
         initUI(view);
         init();
+        lengthCurrentUri = AppController.getInstance().getCurrentUriDecovery().size();
         MessageObserverManager.getInstance().addItem(this);
         initDataSelected();
 
@@ -92,7 +95,8 @@ public class RecommendFragment extends Fragment
 
     public void initDataSelected() {
         List<Recommend> recommends = MessageObserverManager.getInstance().getSelectedRecommendData();
-        if(recommends.size() == 0){
+        recommends.addAll(AppController.getInstance().getCurrentUriDecovery());
+        if(recommends.size() <= lengthCurrentUri){
             hideSelectedRecommend();
             return;
         }
@@ -189,18 +193,9 @@ public class RecommendFragment extends Fragment
                     showLogAndToast("Please select uri!");
                     return;
                 }
-                final List<String> inputUris = convertToListString(mSelectedRecommends);
-                ((RecommendActivity)getActivity()).EXSearch(inputUris);
+                ((RecommendActivity)getActivity()).EXSearch(mSelectedRecommends);
                 break;
         }
-    }
-
-    private List<String> convertToListString(List<Recommend> recommends){
-        List<String> inputUris = new ArrayList<>();
-        for(Recommend node : recommends){
-            inputUris.add(node.getUri());
-        }
-        return inputUris;
     }
 
     //======================TOP recommend=========================
@@ -299,8 +294,9 @@ public class RecommendFragment extends Fragment
 
     @Override
     public void exSearch(Recommend recommend) {
-        List<String> recommends = new ArrayList<>();
-        recommends.add(recommend.getUri());
+        List<Recommend> recommends = new ArrayList<>();
+        recommends.addAll(AppController.getInstance().getCurrentUriDecovery());
+        recommends.add(recommend);
         ((RecommendActivity)getActivity()).EXSearch(recommends);
     }
 
