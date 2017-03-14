@@ -29,7 +29,7 @@ public class SelectedResultsAdapter extends
     private SelectedAdapterCallback mCallback;
 
     public interface SelectedAdapterCallback{
-        void onClick(Recommend recommend);
+        void onClickItem(Recommend recommend);
     }
     public SelectedResultsAdapter(Context context, List<Recommend> listData,
                                   SelectedAdapterCallback callback){
@@ -90,7 +90,7 @@ public class SelectedResultsAdapter extends
         @Override
         public void onClick(View view) {
             int position = getAdapterPosition();
-            mCallback.onClick(mListData.get(position));
+            mCallback.onClickItem(mListData.get(position));
         }
     }
 }

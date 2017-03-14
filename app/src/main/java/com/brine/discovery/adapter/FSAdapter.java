@@ -12,6 +12,7 @@ import android.widget.TextView;
 
 import com.brine.discovery.R;
 import com.brine.discovery.model.FSResult;
+import com.ms.square.android.expandabletextview.ExpandableTextView;
 import com.squareup.picasso.Callback;
 import com.squareup.picasso.Picasso;
 
@@ -76,7 +77,7 @@ public class FSAdapter extends RecyclerView.Adapter<FSAdapter.ViewHolder> {
     class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
         TextView tvUri;
         TextView tvLabel;
-        TextView tvDescription;
+        ExpandableTextView tvDescription;
         ImageView imgThumb;
         ProgressBar progressLoading;
 
@@ -84,7 +85,7 @@ public class FSAdapter extends RecyclerView.Adapter<FSAdapter.ViewHolder> {
              super(view);
              tvUri = (TextView)view.findViewById(R.id.tv_uri);
              tvLabel = (TextView)view.findViewById(R.id.tv_label);
-             tvDescription = (TextView)view.findViewById(R.id.tv_description);
+             tvDescription = (ExpandableTextView)view.findViewById(R.id.tv_description);
              imgThumb = (ImageView) view.findViewById(R.id.img_thumb);
              progressLoading = (ProgressBar) view.findViewById(R.id.progress_loading);
              view.setOnClickListener(this);

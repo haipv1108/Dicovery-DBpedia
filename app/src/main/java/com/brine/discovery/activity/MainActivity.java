@@ -83,6 +83,9 @@ public class MainActivity extends AppCompatActivity
     private RecyclerView mRecycleRecommed;
     private RelativeLayout mRltSelectedRecommend;
 
+    private LinearLayout mLinearFSFilter;
+    private LinearLayout mFSFilterType, mFSFilterAttribute, mFSFilterValue, mFSFilterDistinct;
+
     private KSAdapter mKSAdapter;
     private SelectedResultsAdapter mRecommedAdapter;
     private List<KeywordSearch> mKeywordSearchs;
@@ -95,7 +98,9 @@ public class MainActivity extends AppCompatActivity
     private ImageView mImgSearchOption;
     private ImageView mImgSearch;
 
-    private int typeSearch = LOOKUP_URI;
+    private String keywordSearch = "";
+
+    private int typeSearch;
 
     private interface TypeSearchCallBack {
         void changeTypeSearch();
@@ -107,10 +112,7 @@ public class MainActivity extends AppCompatActivity
         setContentView(R.layout.activity_main);
         initUI();
         init();
-
-        if(typeSearch == LOOKUP_URI){
-            listeningEdtSearch();
-        }
+        setDefaultTypeSearch();
     }
 
     private void initUI(){
@@ -120,12 +122,29 @@ public class MainActivity extends AppCompatActivity
         ImageButton mBtnEXSearch = (ImageButton) findViewById(R.id.btn_EXSearch);
         mBtnEXSearch.setOnClickListener(this);
         mRltSelectedRecommend = (RelativeLayout) findViewById(R.id.rlt_seledted_recommend);
+        mLinearFSFilter = (LinearLayout) findViewById(R.id.fs_filter);
+        mFSFilterType = (LinearLayout) findViewById(R.id.fs_filter_type);
+        mFSFilterAttribute = (LinearLayout) findViewById(R.id.fs_filter_attribute);
+        mFSFilterValue = (LinearLayout) findViewById(R.id.fs_filter_value);
+        mFSFilterDistinct = (LinearLayout) findViewById(R.id.fs_filter_distinct);
 
         mRecyclerFS = (RecyclerView)findViewById(R.id.recycle_fsresult);
         mImgSearchOption = (ImageView) findViewById(R.id.img_search_option);
         mImgSearch = (ImageView) findViewById(R.id.img_search);
         mImgSearchOption.setOnClickListener(this);
         mImgSearch.setOnClickListener(this);
+        mFSFilterType.setOnClickListener(this);
+        mFSFilterAttribute.setOnClickListener(this);
+        mFSFilterValue.setOnClickListener(this);
+        mFSFilterDistinct.setOnClickListener(this);
+    }
+
+    private void setDefaultTypeSearch(){
+        typeSearch = LOOKUP_URI;
+        callBack.changeTypeSearch();
+        if(typeSearch == LOOKUP_URI){
+            listeningEdtSearch();
+        }
     }
 
     private TypeSearchCallBack callBack = new TypeSearchCallBack() {
@@ -138,6 +157,7 @@ public class MainActivity extends AppCompatActivity
                     mKSAdapter.notifyDataSetChanged();
                     mListviewKS.setVisibility(View.VISIBLE);
                     mRecyclerFS.setVisibility(View.GONE);
+                    hideFSFilter();
                     listeningEdtSearch();
                     break;
                 case FACTED_SEARCH:
@@ -145,6 +165,7 @@ public class MainActivity extends AppCompatActivity
                     mFSAdapter.notifyDataSetChanged();
                     mListviewKS.setVisibility(View.GONE);
                     mRecyclerFS.setVisibility(View.VISIBLE);
+                    hideFSFilter();
                     break;
                 case SLIDING_WINDOW:
                     break;
@@ -166,6 +187,14 @@ public class MainActivity extends AppCompatActivity
     private void showSelectedRecommend(){
         mListviewKS.setVisibility(View.GONE);
         mRltSelectedRecommend.setVisibility(View.VISIBLE);
+    }
+
+    private void hideFSFilter(){
+        mLinearFSFilter.setVisibility(View.GONE);
+    }
+
+    private void showFSFilter(){
+        mLinearFSFilter.setVisibility(View.VISIBLE);
     }
 
     private void init(){
@@ -200,7 +229,7 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    public void onClick(final Recommend recommend) {
+    public void onClickItem(final Recommend recommend) {
         new AlertDialog.Builder(this)
                 .setMessage("Are you sure you want to delete " + recommend.getLabel())
                 .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
@@ -233,17 +262,154 @@ public class MainActivity extends AppCompatActivity
                 showPopupSearchOption();
                 break;
             case R.id.img_search:
-                String keywords = getKeywordInput();
-                if(keywords != null){
+                String keyword = getKeywordInput();
+                if(keyword != null){
+                    keywordSearch = keyword;
                     if(typeSearch == FACTED_SEARCH){
-                        showLogAndToast("Tim kiem " + keywords);
-                        facetedSearch(keywords, "");
+                        showLogAndToast("Search " + keywordSearch);
+                        facetedSearch(keywordSearch, "");
                     }else {
-                        slidingWindow(keywords);
+                        slidingWindow(keywordSearch);
                     }
                 }
                 break;
+            case R.id.fs_filter_type:
+                getTypesFilter();
+                break;
+            case R.id.fs_filter_attribute:
+                getAttributesFilter();
+                break;
+            case R.id.fs_filter_value:
+                getValuesFilter();
+                break;
+            case R.id.fs_filter_distinct:
+                getDistinctFilter();
+                break;
         }
+    }
+
+    private void getTypesFilter(){
+        String url = Utils.createUrlGetTypes(keywordSearch);
+
+        final ProgressDialog progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("Loading...");
+        progressDialog.show();
+
+        StringRequest request = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                if(progressDialog.isShowing()){
+                    progressDialog.dismiss();
+                }
+                parseTypesFilterResult(response);
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                if(progressDialog.isShowing()){
+                    progressDialog.dismiss();
+                }
+                showLogAndToast("Error: " + error.getMessage());
+            }
+        });
+        AppController.getInstance().addToRequestQueue(request, "advanced_fs");
+    }
+
+    private void parseTypesFilterResult(String response){
+        showLogAndToast(response);
+    }
+
+    private void getAttributesFilter(){
+        String url = Utils.createUrlGetAttributes(keywordSearch);
+
+        final ProgressDialog progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("Loading...");
+        progressDialog.show();
+
+        StringRequest request = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                if(progressDialog.isShowing()){
+                    progressDialog.dismiss();
+                }
+                parseAttributesFilterResult(response);
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                if(progressDialog.isShowing()){
+                    progressDialog.dismiss();
+                }
+                showLogAndToast("Error: " + error.getMessage());
+            }
+        });
+        AppController.getInstance().addToRequestQueue(request, "advanced_fs");
+    }
+
+    private void parseAttributesFilterResult(String response){
+        showLogAndToast(response);
+    }
+
+    private void getValuesFilter(){
+        String url = Utils.createUrlGetValues(keywordSearch);
+
+        final ProgressDialog progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("Loading...");
+        progressDialog.show();
+
+        StringRequest request = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                if(progressDialog.isShowing()){
+                    progressDialog.dismiss();
+                }
+                parseValuesFilterResult(response);
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                if(progressDialog.isShowing()){
+                    progressDialog.dismiss();
+                }
+                showLogAndToast("Error: " + error.getMessage());
+            }
+        });
+        AppController.getInstance().addToRequestQueue(request, "advanced_fs");
+    }
+
+    private void parseValuesFilterResult(String response){
+        showLogAndToast(response);
+    }
+
+    private void getDistinctFilter(){
+        String url = Utils.createUrlGetDistincts(keywordSearch);
+
+        final ProgressDialog progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("Loading...");
+        progressDialog.show();
+
+        StringRequest request = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                if(progressDialog.isShowing()){
+                    progressDialog.dismiss();
+                }
+                parseDistinctFilterResult(response);
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                if(progressDialog.isShowing()){
+                    progressDialog.dismiss();
+                }
+                showLogAndToast("Error: " + error.getMessage());
+            }
+        });
+        AppController.getInstance().addToRequestQueue(request, "advanced_fs");
+    }
+
+    private void parseDistinctFilterResult(String response){
+        showLogAndToast(response);
     }
 
     @Override
@@ -301,6 +467,7 @@ public class MainActivity extends AppCompatActivity
     private void facetedSearch(String keywords, String optionSearch){
         mFSResults.clear();
         mFSAdapter.notifyDataSetChanged();
+        hideFSFilter();
 
         String url = Utils.createUrlFacetedSearch(keywords, optionSearch);
 
@@ -347,7 +514,11 @@ public class MainActivity extends AppCompatActivity
                     FSResult result = new FSResult(uri, label, description, null);
                     updateFSResult(result);
                 }
-                searchImageForUriFSSearch();
+                if(mFSResults.size() == 0){
+                    showLogAndToast("No results");
+                }else{
+                    searchImageForUriFSSearch();
+                }
             }
         } catch (JSONException e) {
             e.printStackTrace();
@@ -355,8 +526,27 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void updateFSResult(FSResult result){
-        mFSResults.add(result);
-        mFSAdapter.notifyDataSetChanged();
+        if(!isContained(result.getUri()) && isDbpediaSource(result.getUri())){
+            mFSResults.add(result);
+            mFSAdapter.notifyDataSetChanged();
+            showFSFilter();
+        }
+    }
+
+    private boolean isContained(String uri){
+        for(FSResult result : mFSResults){
+            if(result.getUri().equals(uri)){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isDbpediaSource(String uri){
+        if(uri.contains("dbpedia.org")){
+            return true;
+        }
+        return false;
     }
 
     private void searchImageForUriFSSearch(){

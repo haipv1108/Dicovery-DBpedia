@@ -158,7 +158,7 @@ public class RecommendFragment extends Fragment
     }
 
     @Override
-    public void onClick(final Recommend recommend) {
+    public void onClickItem(final Recommend recommend) {
         new AlertDialog.Builder(getContext())
                 .setMessage("Are you sure you want to delete " + recommend.getLabel())
                 .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {

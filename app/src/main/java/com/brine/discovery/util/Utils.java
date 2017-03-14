@@ -16,6 +16,7 @@ import static com.brine.discovery.util.Config.RESULT_JSON_TYPE;
 
 public class Utils {
     private static final String TAG = Utils.class.getCanonicalName();
+    private static final String FS_SEARCH_BASE_URL = "http://dbpedia.org/sparql?default-graph-uri=&query=";
 
     public static String createUrlKeywordSearch(String queryString){
         String url = Config.LOOKUP_DBPEDIA + "QueryClass=&MaxHits=30&QueryString=" + queryString;
@@ -97,7 +98,7 @@ public class Utils {
         String query = createQueryFacetedSearch(keyword, optionSearch);
         String url = "";
         try {
-            url = "http://dbpedia.org/sparql?default-graph-uri=&query=" + URLEncoder.encode(query, "UTF-8") + RESULT_JSON_TYPE;
+            url = FS_SEARCH_BASE_URL + URLEncoder.encode(query, "UTF-8") + RESULT_JSON_TYPE;
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -109,7 +110,7 @@ public class Utils {
         String bifVectorParams = getBifVectorParams(keyword);
         String bifContainParams = getBifContainParams(keyword);
 
-        String query = "     select ?s1 as ?c1, (bif:search_excerpt (bif:vector (" + bifVectorParams + "), ?o1)) as ?c2, ?sc, ?rank, ?g where {{{ select ?s1, (?sc * 3e-1) as ?sc, ?o1, (sql:rnk_scale (<LONG::IRI_RANK> (?s1))) as ?rank, ?g where  \n" +
+        String query = "select distinct ?s1 as ?c1, (bif:search_excerpt (bif:vector (" + bifVectorParams + "), ?o1)) as ?c2, ?sc, ?rank, ?g where {{{ select ?s1, (?sc * 3e-1) as ?sc, ?o1, (sql:rnk_scale (<LONG::IRI_RANK> (?s1))) as ?rank, ?g where  \n" +
                 "  { \n" +
                 "    quad map virtrdf:DefaultQuadMap \n" +
                 "    { \n" +
@@ -122,10 +123,153 @@ public class Utils {
                 "     }\n" +
                 "    "  + optionSearch + "\n" +
                 "  }\n" +
-                " order by desc (?sc * 3e-1 + sql:rnk_scale (<LONG::IRI_RANK> (?s1)))  limit 30  offset 0 }}} ";
+                " order by desc (?sc * 3e-1 + sql:rnk_scale (<LONG::IRI_RANK> (?s1)))  limit 50  offset 0 }}} ";
         showLog(query);
         return query;
     }
+
+    public static String createUrlGetTypes(String keyword){
+        String query = createQueryGetAllType(keyword);
+        String url = "";
+        try {
+            url = FS_SEARCH_BASE_URL + URLEncoder.encode(query, "UTF-8") + RESULT_JSON_TYPE;
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        showLog(url);
+        return url;
+    }
+
+    private static String createQueryGetAllType(String keyword){
+        String bifContainParams = getBifContainParams(keyword);
+
+        String query = "select ?s1c as ?c1 count (distinct (?s1)) as ?c2  where  \n" +
+                "  { \n" +
+                "    quad map virtrdf:DefaultQuadMap \n" +
+                "    { \n" +
+                "      graph ?g \n" +
+                "      { \n" +
+                "         ?s1 ?s1textp ?o1 .\n" +
+                "        ?o1 bif:contains  '(" + bifContainParams + ")'  .\n" +
+                "        \n" +
+                "      }\n" +
+                "     }\n" +
+                "    ?s1 a ?s1c .\n" +
+                "    FILTER (!regex(?s1c, \"yago\",\"i\")) .\n" +
+                "    FILTER (!regex(?s1c, \"wikidata\",\"i\")) .\n" +
+                "    FILTER (regex(?s1c, \"dbpedia\",\"i\")) .\n" +
+                "    \n" +
+                "  }\n" +
+                " group by ?s1c order by desc 2 limit 50  offset 0  ";
+        showLog(query);
+        return query;
+    }
+
+    public static String createUrlGetAttributes(String keywordSearch){
+        String query = createQueryGetAllAttribute(keywordSearch);
+        String url = "";
+        try {
+            url = FS_SEARCH_BASE_URL + URLEncoder.encode(query, "UTF-8") + RESULT_JSON_TYPE;
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        showLog(url);
+        return url;
+    }
+
+    private static String createQueryGetAllAttribute(String keywordSearch){
+        String bifContainParams = getBifContainParams(keywordSearch);
+
+        String query = "select ?s1p as ?c1 count (*) as ?c2  where  \n" +
+                "  { \n" +
+                "    quad map virtrdf:DefaultQuadMap \n" +
+                "    { \n" +
+                "      graph ?g \n" +
+                "      { \n" +
+                "         ?s1 ?s1textp ?o1 .\n" +
+                "        ?o1 bif:contains  '(" + bifContainParams + ")'  .\n" +
+                "        \n" +
+                "      }\n" +
+                "     }\n" +
+                "    ?s1 ?s1p ?s1o .\n" +
+                "    FILTER (regex(?s1p, \"dbpedia\",\"i\")) .\n" +
+                "    \n" +
+                "  }\n" +
+                " group by ?s1p order by desc 2 limit 50  offset 0  ";
+        showLog(query);
+        return query;
+    }
+
+    public static String createUrlGetValues(String keywordSearch){
+        String query = createQueryGetAllValue(keywordSearch);
+        String url = "";
+        try {
+            url = FS_SEARCH_BASE_URL + URLEncoder.encode(query, "UTF-8") + RESULT_JSON_TYPE;
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        showLog(url);
+        return url;
+    }
+
+    private static String createQueryGetAllValue(String keywordSearch){
+        String bifContainParams = getBifContainParams(keywordSearch);
+
+        String query = "     select ?s1ip as ?c1 count (*) as ?c2  where  \n" +
+                "  { \n" +
+                "    quad map virtrdf:DefaultQuadMap \n" +
+                "    { \n" +
+                "      graph ?g \n" +
+                "      { \n" +
+                "         ?s1 ?s1textp ?o1 .\n" +
+                "        ?o1 bif:contains  '(" + bifContainParams + ")'  .\n" +
+                "        \n" +
+                "      }\n" +
+                "     }\n" +
+                "    ?s1o ?s1ip ?s1 .\n" +
+                "    FILTER (regex(?s1ip, \"dbpedia\",\"i\")) .\n" +
+                "  }\n" +
+                " group by ?s1ip order by desc 2 limit 30  offset 0  ";
+        showLog(query);
+        return query;
+    }
+
+    public static String createUrlGetDistincts(String keywordSearch){
+        String query = createQueryGetAllDistinct(keywordSearch);
+        String url = "";
+        try {
+            url = FS_SEARCH_BASE_URL + URLEncoder.encode(query, "UTF-8") + RESULT_JSON_TYPE;
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        showLog(url);
+        return url;
+    }
+
+    private static String createQueryGetAllDistinct(String keywordSearch){
+        String bifContainParams = getBifContainParams(keywordSearch);
+
+        String query = "     select ?s1 as ?c1 count (*) as ?c2 where \n" +
+                "  { \n" +
+                "    select distinct ?s1 ?g  \n" +
+                "    { \n" +
+                "      quad map virtrdf:DefaultQuadMap \n" +
+                "      { \n" +
+                "        graph ?g \n" +
+                "        { \n" +
+                "           ?s1 ?s1textp ?o1 .\n" +
+                "          ?o1 bif:contains  '(" + bifContainParams + ")'  .\n" +
+                "          \n" +
+                "        }\n" +
+                "       }\n" +
+                "      \n" +
+                "    }\n" +
+                "   }\n" +
+                " group by ?s1 order by desc 2 limit 50  offset 0  ";
+        showLog(query);
+        return query;
+    }
+
 
     private static String getBifVectorParams(String keywordSearch){
         List<String> listWord = Arrays.asList(keywordSearch.split(" "));

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/activity_main"
     android:layout_width="match_parent"
@@ -76,18 +76,104 @@
 
     </RelativeLayout>
 
+    <LinearLayout
+        android:id="@+id/fs_filter"
+        android:layout_below="@+id/search_area"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingBottom="@dimen/_2sdp"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:id="@+id/fs_filter_type"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="horizontal">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/fs_filter_type"
+                android:textAppearance="@android:style/TextAppearance.Material.Body2"/>
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/btn_filter"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/fs_filter_attribute"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/fs_filter_attribute"
+                android:textAppearance="@android:style/TextAppearance.Material.Body2"/>
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/btn_filter"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/fs_filter_value"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/fs_filter_value"
+                android:textAppearance="@android:style/TextAppearance.Material.Body2"/>
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/btn_filter"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/fs_filter_distinct"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/fs_filter_distinct"
+                android:textAppearance="@android:style/TextAppearance.Material.Body2"/>
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/btn_filter"/>
+        </LinearLayout>
+
+
+    </LinearLayout>
+
     <android.support.v7.widget.RecyclerView
         android:id="@+id/recycle_fsresult"
+        android:layout_below="@+id/fs_filter"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:paddingLeft="@dimen/_5sdp"
-        android:paddingRight="@dimen/_5sdp"/>
+        android:paddingRight="@dimen/_5sdp" />
 
     <ListView
         android:id="@+id/lv_keyword_search"
+        android:layout_below="@+id/search_area"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:paddingLeft="@dimen/_5sdp"
-        android:paddingRight="@dimen/_5sdp"/>
+        android:paddingRight="@dimen/_5sdp" />
 
-</LinearLayout>
+</RelativeLayout>
