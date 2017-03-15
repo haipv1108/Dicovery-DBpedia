@@ -129,7 +129,7 @@ public class Utils {
     }
 
     public static String createUrlGetTypes(String keyword){
-        String query = createQueryGetAllType(keyword);
+        String query = createQueryGetTypes(keyword);
         String url = "";
         try {
             url = FS_SEARCH_BASE_URL + URLEncoder.encode(query, "UTF-8") + RESULT_JSON_TYPE;
@@ -140,7 +140,7 @@ public class Utils {
         return url;
     }
 
-    private static String createQueryGetAllType(String keyword){
+    private static String createQueryGetTypes(String keyword){
         String bifContainParams = getBifContainParams(keyword);
 
         String query = "select ?s1c as ?c1 count (distinct (?s1)) as ?c2  where  \n" +
@@ -166,7 +166,7 @@ public class Utils {
     }
 
     public static String createUrlGetAttributes(String keywordSearch){
-        String query = createQueryGetAllAttribute(keywordSearch);
+        String query = createQueryGetAttributes(keywordSearch);
         String url = "";
         try {
             url = FS_SEARCH_BASE_URL + URLEncoder.encode(query, "UTF-8") + RESULT_JSON_TYPE;
@@ -177,7 +177,7 @@ public class Utils {
         return url;
     }
 
-    private static String createQueryGetAllAttribute(String keywordSearch){
+    private static String createQueryGetAttributes(String keywordSearch){
         String bifContainParams = getBifContainParams(keywordSearch);
 
         String query = "select ?s1p as ?c1 count (*) as ?c2  where  \n" +
@@ -200,8 +200,8 @@ public class Utils {
         return query;
     }
 
-    public static String createUrlGetValues(String keywordSearch){
-        String query = createQueryGetAllValue(keywordSearch);
+    public static String createUrlGetAttributesValue(String keywordSearch, String option){
+        String query = createQueryGetAttributesValue(keywordSearch, option);
         String url = "";
         try {
             url = FS_SEARCH_BASE_URL + URLEncoder.encode(query, "UTF-8") + RESULT_JSON_TYPE;
@@ -212,7 +212,41 @@ public class Utils {
         return url;
     }
 
-    private static String createQueryGetAllValue(String keywordSearch){
+    private static String createQueryGetAttributesValue(String keywordSearch, String option){
+        String bifContainParams = getBifContainParams(keywordSearch);
+
+        String query = "     select ?s2 as ?c1  where  \n" +
+                "  { \n" +
+                "    quad map virtrdf:DefaultQuadMap \n" +
+                "    { \n" +
+                "      graph ?g \n" +
+                "      { \n" +
+                "         ?s1 ?s1textp ?o1 .\n" +
+                "        ?o1 bif:contains  '(" + bifContainParams+ ")'  .\n" +
+                "        \n" +
+                "      }\n" +
+                "     }\n" +
+                "    " + option + "\n" +
+                "    \n" +
+                "  }\n" +
+                " group by (?s2) order by desc (<LONG::IRI_RANK> (?s2))  limit 50  offset 0  ";
+        showLog(query);
+        return query;
+    }
+
+    public static String createUrlGetValues(String keywordSearch){
+        String query = createQueryGetValues(keywordSearch);
+        String url = "";
+        try {
+            url = FS_SEARCH_BASE_URL + URLEncoder.encode(query, "UTF-8") + RESULT_JSON_TYPE;
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        showLog(url);
+        return url;
+    }
+
+    private static String createQueryGetValues(String keywordSearch){
         String bifContainParams = getBifContainParams(keywordSearch);
 
         String query = "     select ?s1ip as ?c1 count (*) as ?c2  where  \n" +
@@ -230,6 +264,40 @@ public class Utils {
                 "    FILTER (regex(?s1ip, \"dbpedia\",\"i\")) .\n" +
                 "  }\n" +
                 " group by ?s1ip order by desc 2 limit 30  offset 0  ";
+        showLog(query);
+        return query;
+    }
+
+    public static String createUrlGetValuesOfValue(String keywordSearch, String option){
+        String query = createQueryGetValuesOfValue(keywordSearch, option);
+        String url = "";
+        try {
+            url = FS_SEARCH_BASE_URL + URLEncoder.encode(query, "UTF-8") + RESULT_JSON_TYPE;
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        showLog(url);
+        return url;
+    }
+
+    private static String createQueryGetValuesOfValue(String keywordSearch, String option){
+        String bifContainParams = getBifContainParams(keywordSearch);
+
+        String query = "     select ?s2 as ?c1  where  \n" +
+                "  { \n" +
+                "    quad map virtrdf:DefaultQuadMap \n" +
+                "    { \n" +
+                "      graph ?g \n" +
+                "      { \n" +
+                "         ?s1 ?s1textp ?o1 .\n" +
+                "        ?o1 bif:contains  '(" + bifContainParams + ")'  .\n" +
+                "        \n" +
+                "      }\n" +
+                "     }\n" +
+                "    " + option + "\n" +
+                "    \n" +
+                "  }\n" +
+                " group by (?s2) order by desc (<LONG::IRI_RANK> (?s2))  limit 20  offset 0  ";
         showLog(query);
         return query;
     }

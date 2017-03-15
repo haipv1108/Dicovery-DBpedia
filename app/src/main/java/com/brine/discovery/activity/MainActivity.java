@@ -59,7 +59,9 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -77,6 +79,11 @@ public class MainActivity extends AppCompatActivity
     private static final int LOOKUP_URI = 1;
     private static final int FACTED_SEARCH = 2;
     private static final int SLIDING_WINDOW = 3;
+
+    public static final String TYPE_OPTION = "type";
+    public static final String ATTRIBUTE_OPTION = "attribute";
+    public static final String VALUE_OPTION = "value";
+    public static final String DISTINCT_OPTION = "distinct";
 
     private EditText mEdtSearch;
     private ListView mListviewKS;
@@ -99,6 +106,7 @@ public class MainActivity extends AppCompatActivity
     private ImageView mImgSearch;
 
     private String keywordSearch = "";
+    private Map<String, String> mapSearchOptions;
 
     private int typeSearch;
 
@@ -200,6 +208,7 @@ public class MainActivity extends AppCompatActivity
     private void init(){
         mKeywordSearchs = new ArrayList<>();
         mSelectedRecommends = new ArrayList<>();
+        mapSearchOptions = new HashMap<>();
 
         mKSAdapter = new KSAdapter(this, mKeywordSearchs);
         mListviewKS.setAdapter(mKSAdapter);
@@ -288,6 +297,8 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+    //+++++++++++++++++++++++++++++++++++++++++++
+
     private void getTypesFilter(){
         String url = Utils.createUrlGetTypes(keywordSearch);
 
@@ -316,8 +327,52 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void parseTypesFilterResult(String response){
-        showLogAndToast(response);
+        Map<String, String> entitiesMap = new HashMap<>();
+        try {
+            JSONObject jsonObject = new JSONObject(response);
+            JSONArray data = jsonObject.getJSONObject("results").getJSONArray("bindings");
+            for(int i = 0; i < data.length(); i++){
+                JSONObject element = data.getJSONObject(i);
+                String uri = element.getJSONObject("c1").getString("value");
+                List<String> splitUri = Arrays.asList(uri.split("/"));
+                String label = splitUri.get(splitUri.size()-1);
+                label = label.replace("_", " ");
+                entitiesMap.put(uri, label);
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        showDialogTypesEntity(entitiesMap);
     }
+
+    private void showDialogTypesEntity(final Map<String, String> entitiesMap){
+        final String[] strarray = new String[entitiesMap.size()];
+
+        List<String> list = new ArrayList<String>(entitiesMap.values());
+        list.toArray(strarray);
+
+        new AlertDialog.Builder(this)
+                .setTitle("Select type entity")
+                .setSingleChoiceItems(strarray, 0, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        String uri = (String) entitiesMap.keySet().toArray()[i];
+                        String option = " ?s1 a " + "<" + uri + "> .\n" ;
+                        facetedSearch(keywordSearch, option);
+                        dialogInterface.dismiss();
+                    }
+                })
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        dialogInterface.dismiss();
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    //+++++++++++++++++++++++++++++++++++++++++++
 
     private void getAttributesFilter(){
         String url = Utils.createUrlGetAttributes(keywordSearch);
@@ -347,8 +402,126 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void parseAttributesFilterResult(String response){
-        showLogAndToast(response);
+        Map<String, String> entitiesMap = new HashMap<>();
+        try {
+            JSONObject jsonObject = new JSONObject(response);
+            JSONArray data = jsonObject.getJSONObject("results").getJSONArray("bindings");
+            for(int i = 0; i < data.length(); i++){
+                JSONObject element = data.getJSONObject(i);
+                String uri = element.getJSONObject("c1").getString("value");
+                List<String> splitUri = Arrays.asList(uri.split("/"));
+                String label = splitUri.get(splitUri.size()-1);
+                label = label.replace("_", " ");
+                entitiesMap.put(uri, label);
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        showDialogAttributesEntity(entitiesMap);
     }
+
+    private void showDialogAttributesEntity(final Map<String, String> entitiesMap){
+        final String[] strarray = new String[entitiesMap.size()];
+
+        List<String> list = new ArrayList<String>(entitiesMap.values());
+        list.toArray(strarray);
+
+        new AlertDialog.Builder(this)
+                .setTitle("Select type entity")
+                .setSingleChoiceItems(strarray, 0, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        String uri = (String) entitiesMap.keySet().toArray()[i];
+                        String option = " ?s1 " + "<" + uri + "> ?s2 .\n" ;
+                        dialogInterface.dismiss();
+                        getAttributesValue(option);
+                    }
+                })
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        dialogInterface.dismiss();
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void getAttributesValue(final String option){
+        String url = Utils.createUrlGetAttributesValue(keywordSearch, option);
+
+        final ProgressDialog progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("Loading...");
+        progressDialog.show();
+
+        StringRequest request = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                if(progressDialog.isShowing()){
+                    progressDialog.dismiss();
+                }
+                parseAttributesValue(response, option);
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                if(progressDialog.isShowing()){
+                    progressDialog.dismiss();
+                }
+                showLogAndToast("Error: " + error.getMessage());
+            }
+        });
+        AppController.getInstance().addToRequestQueue(request, "advanced_fs");
+    }
+
+    private void parseAttributesValue(String response, String option){
+        Map<String, String> entitiesMap = new HashMap<>();
+        try {
+            JSONObject jsonObject = new JSONObject(response);
+            JSONArray data = jsonObject.getJSONObject("results").getJSONArray("bindings");
+            for(int i = 0; i < data.length(); i++){
+                JSONObject element = data.getJSONObject(i);
+                String uri = element.getJSONObject("c1").getString("value");
+                List<String> splitUri = Arrays.asList(uri.split("/"));
+                String label = splitUri.get(splitUri.size()-1);
+                label = label.replace("_", " ");
+                entitiesMap.put(uri, label);
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        showDialogAttributesValue(entitiesMap, option);
+    }
+
+    private void showDialogAttributesValue(final Map<String, String> entitiesMap, final String option){
+        final String[] strarray = new String[entitiesMap.size()];
+
+        List<String> list = new ArrayList<String>(entitiesMap.values());
+        list.toArray(strarray);
+
+        new AlertDialog.Builder(this)
+                .setTitle("Select value")
+                .setSingleChoiceItems(strarray, 0, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        String uri = (String) entitiesMap.keySet().toArray()[i];
+                        String optionSearch = option + "\n" +
+                                "    filter (?s2 = <" + uri + ">) .";
+                        dialogInterface.dismiss();
+                        facetedSearch(keywordSearch, optionSearch);
+                    }
+                })
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        dialogInterface.dismiss();
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    //+++++++++++++++++++++++++++++++++++++++++++
 
     private void getValuesFilter(){
         String url = Utils.createUrlGetValues(keywordSearch);
@@ -378,8 +551,126 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void parseValuesFilterResult(String response){
-        showLogAndToast(response);
+        Map<String, String> entitiesMap = new HashMap<>();
+        try {
+            JSONObject jsonObject = new JSONObject(response);
+            JSONArray data = jsonObject.getJSONObject("results").getJSONArray("bindings");
+            for(int i = 0; i < data.length(); i++){
+                JSONObject element = data.getJSONObject(i);
+                String uri = element.getJSONObject("c1").getString("value");
+                List<String> splitUri = Arrays.asList(uri.split("/"));
+                String label = splitUri.get(splitUri.size()-1);
+                label = label.replace("_", " ");
+                entitiesMap.put(uri, label);
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        showDialogValuesEntity(entitiesMap);
     }
+
+    private void showDialogValuesEntity(final Map<String, String> entitiesMap){
+        final String[] strarray = new String[entitiesMap.size()];
+
+        List<String> list = new ArrayList<String>(entitiesMap.values());
+        list.toArray(strarray);
+
+        new AlertDialog.Builder(this)
+                .setTitle("Select type entity")
+                .setSingleChoiceItems(strarray, 0, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        String uri = (String) entitiesMap.keySet().toArray()[i];
+                        String option = "?s2 <" + uri + "> ?s1 .";
+                        dialogInterface.dismiss();
+                        getValuesOfValue(option);
+                    }
+                })
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        dialogInterface.dismiss();
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void getValuesOfValue(final String option){
+        String url = Utils.createUrlGetValuesOfValue(keywordSearch, option);
+
+        final ProgressDialog progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("Loading...");
+        progressDialog.show();
+
+        StringRequest request = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                if(progressDialog.isShowing()){
+                    progressDialog.dismiss();
+                }
+                parseValuesOfValue(response, option);
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                if(progressDialog.isShowing()){
+                    progressDialog.dismiss();
+                }
+                showLogAndToast("Error: " + error.getMessage());
+            }
+        });
+        AppController.getInstance().addToRequestQueue(request, "advanced_fs");
+    }
+
+    private void parseValuesOfValue(String response, String option){
+        Map<String, String> entitiesMap = new HashMap<>();
+        try {
+            JSONObject jsonObject = new JSONObject(response);
+            JSONArray data = jsonObject.getJSONObject("results").getJSONArray("bindings");
+            for(int i = 0; i < data.length(); i++){
+                JSONObject element = data.getJSONObject(i);
+                String uri = element.getJSONObject("c1").getString("value");
+                List<String> splitUri = Arrays.asList(uri.split("/"));
+                String label = splitUri.get(splitUri.size()-1);
+                label = label.replace("_", " ");
+                entitiesMap.put(uri, label);
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        showDialogValuesOfValue(entitiesMap, option);
+    }
+
+    private void showDialogValuesOfValue(final Map<String, String> entitiesMap, final String option){
+        final String[] strarray = new String[entitiesMap.size()];
+
+        List<String> list = new ArrayList<String>(entitiesMap.values());
+        list.toArray(strarray);
+
+        new AlertDialog.Builder(this)
+                .setTitle("Select value")
+                .setSingleChoiceItems(strarray, 0, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        String uri = (String) entitiesMap.keySet().toArray()[i];
+                        String optionSearch = option + "\n" +
+                                "    filter (?s2 = <" + uri + ">) .";
+                        dialogInterface.dismiss();
+                        facetedSearch(keywordSearch, optionSearch);
+                    }
+                })
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        dialogInterface.dismiss();
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    //+++++++++++++++++++++++++++++++++++++++++++
 
     private void getDistinctFilter(){
         String url = Utils.createUrlGetDistincts(keywordSearch);
@@ -409,9 +700,52 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void parseDistinctFilterResult(String response){
-        showLogAndToast(response);
+        Map<String, String> entitiesMap = new HashMap<>();
+        try {
+            JSONObject jsonObject = new JSONObject(response);
+            JSONArray data = jsonObject.getJSONObject("results").getJSONArray("bindings");
+            for(int i = 0; i < data.length(); i++){
+                JSONObject element = data.getJSONObject(i);
+                String uri = element.getJSONObject("c1").getString("value");
+                List<String> splitUri = Arrays.asList(uri.split("/"));
+                String label = splitUri.get(splitUri.size()-1);
+                label = label.replace("_", " ");
+                entitiesMap.put(uri, label);
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        showDialogDistinctsEntity(entitiesMap);
     }
 
+    private void showDialogDistinctsEntity(final Map<String, String> entitiesMap){
+        final String[] strarray = new String[entitiesMap.size()];
+
+        List<String> list = new ArrayList<String>(entitiesMap.values());
+        list.toArray(strarray);
+
+        new AlertDialog.Builder(this)
+                .setTitle("Select entity")
+                .setSingleChoiceItems(strarray, 0, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        String uri = (String) entitiesMap.keySet().toArray()[i];
+                        String option = "filter (?s1 = <" + uri + ">) .";
+                        dialogInterface.dismiss();
+                        facetedSearch(keywordSearch, option);
+                    }
+                })
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        dialogInterface.dismiss();
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    //+++++++++++++++++++++++++++++++++++++++++++
     @Override
     public void onClickFS(FSResult fsResult) {
         if(!isSelectedItem(fsResult.getUri())){
@@ -481,7 +815,7 @@ public class MainActivity extends AppCompatActivity
                 if(progressDialog.isShowing()){
                     progressDialog.dismiss();
                 }
-                parsefacetedSeachResult(response);
+                parseFSResult(response);
             }
         }, new Response.ErrorListener() {
             @Override
@@ -495,7 +829,7 @@ public class MainActivity extends AppCompatActivity
         AppController.getInstance().addToRequestQueue(stringRequest, "factedsearch");
     }
 
-    private void parsefacetedSeachResult(String response){
+    private void parseFSResult(String response){
         try {
             JSONObject jsonObject = new JSONObject(response);
             JSONArray data = jsonObject.getJSONObject("results").getJSONArray("bindings");
@@ -517,7 +851,7 @@ public class MainActivity extends AppCompatActivity
                 if(mFSResults.size() == 0){
                     showLogAndToast("No results");
                 }else{
-                    searchImageForUriFSSearch();
+                    searchImageFSSearch();
                 }
             }
         } catch (JSONException e) {
@@ -549,7 +883,7 @@ public class MainActivity extends AppCompatActivity
         return false;
     }
 
-    private void searchImageForUriFSSearch(){
+    private void searchImageFSSearch(){
         if(mFSResults.size() == 0){
             return;
         }
