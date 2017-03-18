@@ -13,6 +13,9 @@ import java.util.List;
 
 public class MessageObserverManager {
     private static MessageObserverManager instance = null;
+    public static final int ADD_ITEM = 1;
+    public static final int DELETE_ITEM = 2;
+
     private ArrayList<MessageObserver> observers;
     private List<Recommend> mSelectedRecommend = new ArrayList<>();
 
@@ -47,10 +50,15 @@ public class MessageObserverManager {
         return mSelectedRecommend;
     }
 
-    public void notifyAllObserver(Recommend recommend) {
-        mSelectedRecommend.add(recommend);
+    public void notifyAllObserver(Recommend recommend, int type) {
+        if(type == ADD_ITEM){
+            mSelectedRecommend.add(recommend);
+        }
+        if(type == DELETE_ITEM){
+            mSelectedRecommend.remove(recommend);
+        }
         for (MessageObserver observer : observers) {
-            observer.updateSelectedItem(recommend);
+            observer.updateSelectedItem(recommend, type);
         }
     }
 }
