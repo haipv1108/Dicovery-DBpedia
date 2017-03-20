@@ -95,8 +95,7 @@ public class Utils {
     }
 
     public static String createUrlFacetedSearch(String keyword, String optionSearch){
-        String keywordSearch = removeStopWord(keyword);
-        String query = createQueryFacetedSearch(keywordSearch, optionSearch);
+        String query = createQueryFacetedSearch(keyword, optionSearch);
         String url = "";
         try {
             url = DBPEDIA_SEARCH_BASE_URL + URLEncoder.encode(query, "UTF-8") + RESULT_JSON_TYPE;
@@ -105,18 +104,6 @@ public class Utils {
         }
         showLog(url);
         return url;
-    }
-
-    private static String removeStopWord(String keyword){
-        String result = "";
-        List<String> splitWord = Arrays.asList(keyword.split(" "));
-        List<String> stopWord = Arrays.asList(Config.STOP_WORD);
-        for(String word : splitWord){
-            if(!stopWord.contains(word)){
-                result += " " + word;
-            }
-        }
-        return result.trim();
     }
 
     private static String createQueryFacetedSearch(String keyword, String optionSearch){

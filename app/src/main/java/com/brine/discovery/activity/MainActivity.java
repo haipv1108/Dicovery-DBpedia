@@ -87,6 +87,7 @@ public class MainActivity extends AppCompatActivity
     private static final int LOOKUP_URI = 1;
     private static final int FACTED_SEARCH = 2;
     private static final int SLIDING_WINDOW = 3;
+    private static final int FACTED_SEARCH_ADVANCED = 4;
 
     public static final String TYPE_OPTION = "type";
     public static final String ATTRIBUTE_OPTION = "attribute";
@@ -185,6 +186,13 @@ public class MainActivity extends AppCompatActivity
                     break;
                 case SLIDING_WINDOW:
                     break;
+                case FACTED_SEARCH_ADVANCED:
+                    mFSResults.clear();
+                    mFSAdapter.notifyDataSetChanged();
+                    mListviewKS.setVisibility(View.GONE);
+                    mRecyclerFS.setVisibility(View.VISIBLE);
+                    hideFSFilter();
+                    break;
                 default:
                     break;
             }
@@ -280,13 +288,18 @@ public class MainActivity extends AppCompatActivity
                 break;
             case R.id.img_search:
                 String keyword = getKeywordInput();
+                String keywordRemovedStopWord = removeStopWord(keyword);
+                showLogAndToast(keywordRemovedStopWord);
                 if(keyword != null){
-                    keywordSearch = keyword;
+                    keywordSearch = keywordRemovedStopWord;
                     if(typeSearch == FACTED_SEARCH){
                         showLogAndToast("Search " + keywordSearch);
                         facetedSearch(keywordSearch, "");
                     }if(typeSearch == SLIDING_WINDOW) {
                         slidingWindow(keywordSearch);
+                    }
+                    if(typeSearch == FACTED_SEARCH_ADVANCED){
+                        facetedSearchAdvanced(keywordSearch);
                     }
                 }
                 break;
@@ -778,7 +791,7 @@ public class MainActivity extends AppCompatActivity
                             callBack.changeTypeSearch();
                         }
                         return true;
-                    case R.id.menu_facted_search:
+                    case R.id.menu_faceted_search:
                         if(typeSearch != FACTED_SEARCH){
                             typeSearch = FACTED_SEARCH;
                             callBack.changeTypeSearch();
@@ -787,6 +800,12 @@ public class MainActivity extends AppCompatActivity
                     case R.id.menu_sliding_window:
                         if(typeSearch != SLIDING_WINDOW){
                             typeSearch = SLIDING_WINDOW;
+                            callBack.changeTypeSearch();
+                        }
+                        return true;
+                    case R.id.menu_faceted_search_advanced:
+                        if(typeSearch != FACTED_SEARCH_ADVANCED){
+                            typeSearch = FACTED_SEARCH_ADVANCED;
                             callBack.changeTypeSearch();
                         }
                         return true;
@@ -835,6 +854,18 @@ public class MainActivity extends AppCompatActivity
             }
         });
         AppController.getInstance().addToRequestQueue(stringRequest, "factedsearch");
+    }
+
+    private static String removeStopWord(String keyword){
+        String result = "";
+        List<String> splitWord = Arrays.asList(keyword.split(" "));
+        List<String> stopWord = Arrays.asList(Config.STOP_WORD);
+        for(String word : splitWord){
+            if(!stopWord.contains(word)){
+                result += " " + word;
+            }
+        }
+        return result.trim();
     }
 
     private void parseFSResult(String response){
@@ -1091,6 +1122,75 @@ public class MainActivity extends AppCompatActivity
             super.onPostExecute(sldResults);
             progressDialog.dismiss();
         }
+    }
+
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++
+    private void facetedSearchAdvanced(final String keyword){
+        String url = Utils.createUrlGetTypes(keyword);
+
+        final ProgressDialog progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("Loading...");
+        progressDialog.show();
+
+        StringRequest request = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                if(progressDialog.isShowing()){
+                    progressDialog.dismiss();
+                }
+                Map<String, Integer> entitiesMap = new HashMap<>();
+                List<String> splitKeyword = Arrays.asList(keyword.split(" "));
+                try {
+                    JSONObject jsonObject = new JSONObject(response);
+                    JSONArray data = jsonObject.getJSONObject("results").getJSONArray("bindings");
+                    for(int i = 0; i < data.length(); i++){
+                        JSONObject element = data.getJSONObject(i);
+                        String uri = element.getJSONObject("c1").getString("value");
+                        List<String> splitUri = Arrays.asList(uri.split("/"));
+                        String label = splitUri.get(splitUri.size()-1);
+                        label = label.replace("_", " ");
+                        for(int index = 0; index < splitKeyword.size(); index++){
+                            int percent = splitKeyword.get(index).length() * 8/10;
+                            if((splitKeyword.get(index).toLowerCase().contains(label.toLowerCase())
+                                    && percent <= label.length()) || label.toLowerCase().contains(splitKeyword.get(index))){
+                                entitiesMap.put(uri, index);
+                            }
+                        }
+                    }
+                    if(entitiesMap.size() == 0){
+                        facetedSearch(keyword, "");
+                    }else if(entitiesMap.size() == 1){
+                        String uri = (String) entitiesMap.keySet().toArray()[0];
+                        String option = " ?s1 a " + "<" + uri + "> .\n" ;
+                        showLog("1. OPTION SEARCH: " + option);
+                        facetedSearch(keyword, option);
+                    }else if(entitiesMap.size() >1){
+                        List<Integer> listweight = new ArrayList<Integer>(entitiesMap.values());
+                        int minValue = listweight.get(0);
+                        for(int i = 1; i < listweight.size(); i++){
+                            if(listweight.get(i) < minValue){
+                                minValue = i;
+                            }
+                        }
+                        String uri = (String) entitiesMap.keySet().toArray()[minValue];
+                        String option = " ?s1 a " + "<" + uri + "> .\n" ;
+                        showLog("2. OPTION SEARCH: " + option);
+                        facetedSearch(keyword, option);
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                if(progressDialog.isShowing()){
+                    progressDialog.dismiss();
+                }
+                showLogAndToast("Error: " + error.getMessage());
+            }
+        });
+        AppController.getInstance().addToRequestQueue(request, "advanced_fs");
     }
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++

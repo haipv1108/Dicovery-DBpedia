@@ -5,10 +5,13 @@
             android:id="@+id/menu_lookup_uri"
             android:title="@string/menu_lookup_uri" />
         <item
-            android:id="@+id/menu_facted_search"
+            android:id="@+id/menu_faceted_search"
             android:title="@string/menu_facted_search"/>
         <item
             android:id="@+id/menu_sliding_window"
             android:title="@string/menu_sliding_window"/>
+        <item
+            android:id="@+id/menu_faceted_search_advanced"
+            android:title="@string/fs_search_advanced"/>
     </group>
 </menu>
