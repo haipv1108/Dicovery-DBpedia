@@ -16,7 +16,7 @@ import static com.brine.discovery.util.Config.RESULT_JSON_TYPE;
 
 public class Utils {
     private static final String TAG = Utils.class.getCanonicalName();
-    private static final String FS_SEARCH_BASE_URL = "http://dbpedia.org/sparql?default-graph-uri=&query=";
+    private static final String DBPEDIA_SEARCH_BASE_URL = "http://dbpedia.org/sparql?default-graph-uri=&query=";
 
     public static String createUrlKeywordSearch(String queryString){
         String url = Config.LOOKUP_DBPEDIA + "QueryClass=&MaxHits=30&QueryString=" + queryString;
@@ -95,15 +95,28 @@ public class Utils {
     }
 
     public static String createUrlFacetedSearch(String keyword, String optionSearch){
-        String query = createQueryFacetedSearch(keyword, optionSearch);
+        String keywordSearch = removeStopWord(keyword);
+        String query = createQueryFacetedSearch(keywordSearch, optionSearch);
         String url = "";
         try {
-            url = FS_SEARCH_BASE_URL + URLEncoder.encode(query, "UTF-8") + RESULT_JSON_TYPE;
+            url = DBPEDIA_SEARCH_BASE_URL + URLEncoder.encode(query, "UTF-8") + RESULT_JSON_TYPE;
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
         showLog(url);
         return url;
+    }
+
+    private static String removeStopWord(String keyword){
+        String result = "";
+        List<String> splitWord = Arrays.asList(keyword.split(" "));
+        List<String> stopWord = Arrays.asList(Config.STOP_WORD);
+        for(String word : splitWord){
+            if(!stopWord.contains(word)){
+                result += " " + word;
+            }
+        }
+        return result.trim();
     }
 
     private static String createQueryFacetedSearch(String keyword, String optionSearch){
@@ -132,7 +145,7 @@ public class Utils {
         String query = createQueryGetTypes(keyword);
         String url = "";
         try {
-            url = FS_SEARCH_BASE_URL + URLEncoder.encode(query, "UTF-8") + RESULT_JSON_TYPE;
+            url = DBPEDIA_SEARCH_BASE_URL + URLEncoder.encode(query, "UTF-8") + RESULT_JSON_TYPE;
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -165,11 +178,46 @@ public class Utils {
         return query;
     }
 
+    public static String createUrlGetTypesAdvanced(){
+        String query = createQueryGetTypesAdvanced();
+        String url = "";
+        try {
+            url = DBPEDIA_SEARCH_BASE_URL + URLEncoder.encode(query, "UTF-8") + RESULT_JSON_TYPE;
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        showLog(url);
+        return url;
+    }
+
+    private static String createQueryGetTypesAdvanced(){
+        String query = "     select ?s1c as ?c1 count (*) as ?c2  where  \n" +
+                "  { \n" +
+                "    quad map virtrdf:DefaultQuadMap \n" +
+                "    { \n" +
+                "      graph ?g \n" +
+                "      { \n" +
+                "         ?s1 ?s1textp ?o1 .\n" +
+                "        ?o1 bif:contains  '(FILM AND MUSIC)'  .\n" +
+                "        \n" +
+                "      }\n" +
+                "     }\n" +
+                "    ?s1 a ?s1c .\n" +
+                "    FILTER (!regex(?s1c, \"yago\",\"i\")) .\n" +
+                "    FILTER (!regex(?s1c, \"wikidata\",\"i\")) .\n" +
+                "    FILTER (regex(?s1c, \"dbpedia\",\"i\")) .\n" +
+                "    \n" +
+                "  }\n" +
+                " group by ?s1c order by desc 2 limit 50  offset 0  ";
+        showLog(query);
+        return query;
+    }
+
     public static String createUrlGetAttributes(String keywordSearch){
         String query = createQueryGetAttributes(keywordSearch);
         String url = "";
         try {
-            url = FS_SEARCH_BASE_URL + URLEncoder.encode(query, "UTF-8") + RESULT_JSON_TYPE;
+            url = DBPEDIA_SEARCH_BASE_URL + URLEncoder.encode(query, "UTF-8") + RESULT_JSON_TYPE;
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -204,7 +252,7 @@ public class Utils {
         String query = createQueryGetAttributesValue(keywordSearch, option);
         String url = "";
         try {
-            url = FS_SEARCH_BASE_URL + URLEncoder.encode(query, "UTF-8") + RESULT_JSON_TYPE;
+            url = DBPEDIA_SEARCH_BASE_URL + URLEncoder.encode(query, "UTF-8") + RESULT_JSON_TYPE;
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -238,7 +286,7 @@ public class Utils {
         String query = createQueryGetValues(keywordSearch);
         String url = "";
         try {
-            url = FS_SEARCH_BASE_URL + URLEncoder.encode(query, "UTF-8") + RESULT_JSON_TYPE;
+            url = DBPEDIA_SEARCH_BASE_URL + URLEncoder.encode(query, "UTF-8") + RESULT_JSON_TYPE;
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -272,7 +320,7 @@ public class Utils {
         String query = createQueryGetValuesOfValue(keywordSearch, option);
         String url = "";
         try {
-            url = FS_SEARCH_BASE_URL + URLEncoder.encode(query, "UTF-8") + RESULT_JSON_TYPE;
+            url = DBPEDIA_SEARCH_BASE_URL + URLEncoder.encode(query, "UTF-8") + RESULT_JSON_TYPE;
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -306,7 +354,7 @@ public class Utils {
         String query = createQueryGetAllDistinct(keywordSearch);
         String url = "";
         try {
-            url = FS_SEARCH_BASE_URL + URLEncoder.encode(query, "UTF-8") + RESULT_JSON_TYPE;
+            url = DBPEDIA_SEARCH_BASE_URL + URLEncoder.encode(query, "UTF-8") + RESULT_JSON_TYPE;
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -365,6 +413,48 @@ public class Utils {
         }
         showLog("Contain param: " + bifContainParams);
         return bifContainParams;
+    }
+
+    ///+++++++++++++++++++++++++++++++++++++++++++++++
+
+    public static String createUrlSearchExpandSLD(String keyword){
+        String query = searchExpandEntitiesQuery(keyword);
+        String url = "";
+        try {
+            url = DBPEDIA_SEARCH_BASE_URL + URLEncoder.encode(query, "UTF-8") + RESULT_JSON_TYPE;
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        showLog(url);
+        return url;
+    }
+
+    private static String searchExpandEntitiesQuery(String keyword){
+//        "SELECT distinct *\n" +
+//                "WHERE{\n" +
+//                " ?s rdfs:label ?label .\n" +
+//                " FILTER regex(?label, \"" + keyword + "\",'i'). \n" +
+//                " FILTER regex(?s, \"dbpedia\", 'i'). \n" +
+//                " FILTER langMatches( lang(?label), \"en\" )\n" +
+//                " ?s <http://dbpedia.org/ontology/abstract> ?description .\n" +
+//                " FILTER (lang(?description) = \"en\") \n" +
+//                " OPTIONAL {?s <http://dbpedia.org/ontology/thumbnail> ?thumb} .\n" +
+//                "}\n" +
+//                "LIMIT 8";
+        String queryString =
+                "SELECT distinct *\n" +
+                " WHERE{\n" +
+                " ?s rdfs:label ?label .\n" +
+                " FILTER regex(?label, \"" + keyword + "\",'i'). \n" +
+                " FILTER regex(?s, \"dbpedia\", 'i'). \n" +
+                " FILTER langMatches( lang(?label), \"en\" )\n" +
+                " ?s <http://dbpedia.org/ontology/abstract> ?description .\n" +
+                " FILTER (lang(?description) = \"en\") \n" +
+                " OPTIONAL {?s <http://dbpedia.org/ontology/thumbnail> ?thumb} .\n" +
+                "}\n" +
+                "LIMIT 8";
+        showLog(queryString);
+        return queryString;
     }
 
     private static void showLog(String message){

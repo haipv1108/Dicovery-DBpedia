@@ -1,8 +1,10 @@
 package com.brine.discovery.activity;
 
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -37,6 +39,7 @@ import com.brine.discovery.adapter.SelectedResultsAdapter;
 import com.brine.discovery.model.FSResult;
 import com.brine.discovery.model.KeywordSearch;
 import com.brine.discovery.model.Recommend;
+import com.brine.discovery.model.SLDResult;
 import com.brine.discovery.util.Config;
 import com.brine.discovery.util.DbpediaConstant;
 import com.brine.discovery.util.Utils;
@@ -68,6 +71,11 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
 import cz.msebera.android.httpclient.Header;
+import cz.msebera.android.httpclient.HttpResponse;
+import cz.msebera.android.httpclient.client.HttpClient;
+import cz.msebera.android.httpclient.client.methods.HttpGet;
+import cz.msebera.android.httpclient.impl.client.DefaultHttpClient;
+import cz.msebera.android.httpclient.util.EntityUtils;
 
 public class MainActivity extends AppCompatActivity
         implements View.OnClickListener, SelectedResultsAdapter.SelectedAdapterCallback,
@@ -277,7 +285,7 @@ public class MainActivity extends AppCompatActivity
                     if(typeSearch == FACTED_SEARCH){
                         showLogAndToast("Search " + keywordSearch);
                         facetedSearch(keywordSearch, "");
-                    }else {
+                    }if(typeSearch == SLIDING_WINDOW) {
                         slidingWindow(keywordSearch);
                     }
                 }
@@ -938,10 +946,154 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+    //++++++++++++++++++++++++++++++++++++++++++++++++++++++
     private void slidingWindow(String keywords){
-
+        List<String> phrases = splitKeywordToPhrase(keywords);
+//        new SLDWindowTop(this).execute(phrases);
+        new SLDWindowRecommend(this).execute(phrases);
     }
 
+    private List<String> splitKeywordToPhrase(String keywords){
+        List<String> phrases = new ArrayList<>();
+        List<String> listWord = Arrays.asList(keywords.split(" "));
+
+        int lengthWords = listWord.size();
+        for (int i = 0; i < lengthWords; i++) {
+            if (i + 2 < lengthWords) {
+                String pharse = listWord.get(i) + " " +
+                        listWord.get(i + 1) + " " + listWord.get(i + 2);
+                if(!phrases.contains(pharse))
+                    phrases.add(pharse);
+            }
+            if (i + 1 < lengthWords) {
+                String pharse = listWord.get(i) + " " + listWord.get(i + 1);
+                if(!phrases.contains(pharse))
+                    phrases.add(pharse);
+            }
+            if(!phrases.contains(listWord.get(i)))
+                phrases.add(listWord.get(i));
+        }
+        showLog("Phrases: " + phrases.toString());
+        return phrases;
+    }
+
+    private class SLDWindowTop extends AsyncTask<List<String>, Void, List<String>>{
+        ProgressDialog progressDialog;
+        Context context;
+
+        public SLDWindowTop(Context _context){
+            this.context = _context;
+        }
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            progressDialog = new ProgressDialog(context);
+            progressDialog.setMessage("Loading...");
+            progressDialog.show();
+        }
+
+        @Override
+        protected List<String> doInBackground(List<String>... lists) {
+            List<String> uris = new ArrayList<>();
+            List<String> pharses = lists[0];
+            HttpClient client = new DefaultHttpClient();
+            for(String pharse : pharses){
+                if(isStopWord(pharse)) continue;
+                String url = "http://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=select+distinct+%3FConcept+where+%7B%5B%5D+a+%3FConcept%7D+LIMIT+100&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on";
+                HttpGet request = new HttpGet(url);
+                HttpResponse response;
+                try {
+                    response = client.execute(request);
+                    Log.d("FUCK", EntityUtils.toString(response.getEntity()));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            return uris;
+        }
+
+        @Override
+        protected void onPostExecute(List<String> uris) {
+            super.onPostExecute(uris);
+            progressDialog.dismiss();
+
+        }
+    }
+
+    private boolean isStopWord(String word) {
+        List<String> listStopWord = Arrays.asList(Config.STOP_WORD);
+        return listStopWord.contains(word.toLowerCase());
+    }
+
+    private class SLDWindowRecommend extends AsyncTask<List<String>, Void, List<SLDResult>>{
+        private ProgressDialog progressDialog;
+        private Context context;
+
+        public SLDWindowRecommend(Context _context){
+            this.context = _context;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            progressDialog = new ProgressDialog(context);
+            progressDialog.setMessage("Loading");
+            progressDialog.show();
+        }
+
+        @Override
+        protected List<SLDResult> doInBackground(List<String>... lists) {
+            List<SLDResult> sldResults = new ArrayList<>();
+            List<String> pharses = lists[0];
+            HttpClient client = new DefaultHttpClient();
+            for(String pharse : pharses){
+                if(isStopWord(pharse)) continue;
+                String url = Utils.createUrlSearchExpandSLD(pharse);
+                HttpGet request = new HttpGet(url);
+                HttpResponse httpResponse;
+                try {
+                    httpResponse = client.execute(request);
+                    String response = EntityUtils.toString(httpResponse.getEntity());
+                    JSONObject jsonObject = new JSONObject(response);
+                    JSONArray data = jsonObject.getJSONObject("results").getJSONArray("bindings");
+                    if(data.length() == 0){
+                        showLog("No result");
+                    }else{
+                        for(int i = 0; i < data.length(); i++){
+                            JSONObject element = data.getJSONObject(i);
+                            String uri = element.getJSONObject("s").getString("value");
+                            boolean isContained = false;
+                            for(SLDResult sldResult : sldResults){
+                                if(sldResult.getUri().equals(uri)){
+                                    isContained = true;
+                                    break;
+                                }
+                            }
+                            if(!isContained){
+                                String label = element.getJSONObject("label").getString("value");
+                                String description = element.getJSONObject("description").getString("value");
+                                String thumb = element.getJSONObject("thumb").getString("value");
+                                SLDResult result = new SLDResult(uri, label, description, thumb);
+                                sldResults.add(result);
+                            }
+                        }
+                    }
+
+                } catch (IOException | JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+            return sldResults;
+        }
+
+        @Override
+        protected void onPostExecute(List<SLDResult> sldResults) {
+            super.onPostExecute(sldResults);
+            progressDialog.dismiss();
+        }
+    }
+
+    //++++++++++++++++++++++++++++++++++++++++++++++++++++++
     private void EXSearch(final List<Recommend> recommends){
         AppController.getInstance().setUriDecovery(recommends);
         mProgressDialog = new ProgressDialog(this);

@@ -84,6 +84,7 @@ public class RecommendFragment extends Fragment
         initUI(view);
         init();
         MessageObserverManager.getInstance().addItem(this);
+        hideSelectedRecommend();
         getSelectedData();
         if(mTopType){
             parserTopResponseData();
@@ -142,6 +143,11 @@ public class RecommendFragment extends Fragment
     private void getSelectedData(){
         mSelectedRecommends.addAll(MessageObserverManager.getInstance().getSelectedRecommendData());
         mRecommedAdapter.notifyDataSetChanged();
+        if(mSelectedRecommends.isEmpty()){
+            hideSelectedRecommend();
+        }else{
+            showSelectedRecommend();
+        }
     }
 
     @Override
