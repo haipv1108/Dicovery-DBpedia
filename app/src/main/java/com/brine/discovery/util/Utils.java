@@ -444,6 +444,42 @@ public class Utils {
         return queryString;
     }
 
+    public static String createUrlGetRelative(String fromUri, String currentUri){
+        String query = createQueryGetRelative(fromUri, currentUri);
+        String url = "";
+        try {
+            url = "http://dbpedia-test.inria.fr/sparql?format=json&query=" + URLEncoder.encode(query, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        showLog(url);
+        return url;
+    }
+
+    private static String createQueryGetRelative(String fromUri, String currentUri){
+        String query = "SELECT ?label1 ?label2 ?k ?catlabel (count(?i) as ?count)\n" +
+                "WHERE\n" +
+                "{\n" +
+                "<" + currentUri + "> ?k ?cat .\n" +
+                "<" + fromUri + "> ?k ?cat .\n" +
+                "?i ?u ?cat .\n" +
+                "<" + currentUri + "> rdfs:label ?label1 .\n" +
+                "<" + fromUri + "> rdfs:label ?label2 .\n" +
+                "\n" +
+                "{\n" +
+                "?cat <http://www.w3.org/2004/02/skos/core#prefLabel> ?catlabel\n" +
+                "}\n" +
+                "\n" +
+                "UNION \n" +
+                "{\n" +
+                "?cat rdfs:label ?catlabel\n" +
+                "}\n" +
+                "\n" +
+                "FILTER ( ?k!=<http://dbpedia.org/ontology/wikiPageWikiLink> && ?k !=rdf:type && ?k!=<http://dbpedia.org/property/wikiPageUsesTemplate> && ?k!=<http://dbpedia.org/property/language> && lang(?label1) = \"en\" && lang(?label2) = \"en\" )\n" +
+                "}";
+        return query;
+    }
+
     private static void showLog(String message){
         Log.d(TAG, message);
     }

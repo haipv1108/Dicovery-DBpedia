@@ -106,9 +106,7 @@ public class DetailsActivity extends AppCompatActivity
         mTvRecommendedGraph.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent intent = new Intent(DetailsActivity.this, GraphActivity.class);
-                intent.putExtra(GraphActivity.RECOMMENDEDURI, mUri);
-                startActivity(intent);
+                showWhyRecommended();
             }
         });
 
@@ -125,6 +123,12 @@ public class DetailsActivity extends AppCompatActivity
                 showTypeCategory();
             }
         });
+    }
+
+    private void showWhyRecommended(){
+        Intent intent = new Intent(DetailsActivity.this, GraphActivity.class);
+        intent.putExtra(GraphActivity.RECOMMENDEDURI, mUri);
+        startActivity(intent);
     }
 
     private int calRequest(){
