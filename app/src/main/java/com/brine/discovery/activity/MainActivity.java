@@ -289,7 +289,6 @@ public class MainActivity extends AppCompatActivity
             case R.id.img_search:
                 String keyword = getKeywordInput();
                 String keywordRemovedStopWord = removeStopWord(keyword);
-                showLogAndToast(keywordRemovedStopWord);
                 if(keyword != null){
                     keywordSearch = keywordRemovedStopWord;
                     if(typeSearch == FACTED_SEARCH){
@@ -857,6 +856,8 @@ public class MainActivity extends AppCompatActivity
     }
 
     private static String removeStopWord(String keyword){
+        if(keyword == null || keyword.isEmpty())
+            return "";
         String result = "";
         List<String> splitWord = Arrays.asList(keyword.split(" "));
         List<String> stopWord = Arrays.asList(Config.STOP_WORD);
@@ -980,7 +981,7 @@ public class MainActivity extends AppCompatActivity
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++
     private void slidingWindow(String keywords){
         List<String> phrases = splitKeywordToPhrase(keywords);
-//        new SLDWindowTop(this).execute(phrases);
+        new SLDWindowTop(this).execute(phrases);
         new SLDWindowRecommend(this).execute(phrases);
     }
 
@@ -1015,6 +1016,7 @@ public class MainActivity extends AppCompatActivity
         public SLDWindowTop(Context _context){
             this.context = _context;
         }
+
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
@@ -1030,7 +1032,7 @@ public class MainActivity extends AppCompatActivity
             HttpClient client = new DefaultHttpClient();
             for(String pharse : pharses){
                 if(isStopWord(pharse)) continue;
-                String url = "http://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=select+distinct+%3FConcept+where+%7B%5B%5D+a+%3FConcept%7D+LIMIT+100&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on";
+                String url = Utils.createUrlSearchAccuracySLD(pharse);
                 HttpGet request = new HttpGet(url);
                 HttpResponse response;
                 try {

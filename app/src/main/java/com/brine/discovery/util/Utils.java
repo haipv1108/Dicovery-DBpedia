@@ -404,6 +404,70 @@ public class Utils {
 
     ///+++++++++++++++++++++++++++++++++++++++++++++++
 
+    public static String createUrlSearchAccuracySLD(String keyword){
+        String query = searchAccuracyEntitiesQuery(keyword);
+        String url = "";
+        try {
+            url = DBPEDIA_SEARCH_BASE_URL + URLEncoder.encode(query, "UTF-8") + RESULT_JSON_TYPE;
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        showLog(url);
+        return url;
+    }
+
+    private static String searchAccuracyEntitiesQuery(String keyword){
+        List<String> splitKeyword = Arrays.asList(keyword.split(" "));
+        String keywordEntity = "";
+        for(String word : splitKeyword){
+            String cap = word.substring(0, 1).toUpperCase() + word.substring(1);
+            keywordEntity += " " + cap;
+        }
+        keywordEntity = keywordEntity.trim();
+//        String queryString =
+//                Config.PREFIX_DBPEDIA +
+//                        "\n" +
+//                        "SELECT *\n" +
+//                        "WHERE{\n" +
+//                        "  {?s a dbpedia-owl:Song ;\n" +
+//                        "        dbpedia2:name :" + keywordEntity + " .\n" +
+//                        "  }\n" +
+//                        " UNION{\n" +
+//                        "   ?s dbpedia-owl:album :" + keywordEntity + ".\n" +
+//                        " }\n" +
+//                        " UNION{\n" +
+//                        "   ?s dbpedia-owl:artist :" + keywordEntity + " .\n" +
+//                        " }\n" +
+//                        " UNION{\n" +
+//                        "  ?s dbpedia-owl:composer :" + keywordEntity + " .\n" +
+//                        " }\n" +
+//                        " UNION{\n" +
+//                        "  ?s dbpedia-owl:genre :" + keywordEntity + " .\n" +
+//                        " }\n" +
+//                        " UNION{\n" +
+//                        "  ?s dbpedia-owl:lyrics :" + keywordEntity + " .\n" +
+//                        " }\n" +
+//                        " UNION{\n" +
+//                        "  ?s dbpedia-owl:producer :" + keywordEntity + " .\n" +
+//                        " }\n" +
+//                        " UNION{\n" +
+//                        "  ?s dbpedia-owl:writer :" + keywordEntity + " .\n" +
+//                        " }\n" +
+//                        "}";
+        String queryString = Config.PREFIX_DBPEDIA +
+                "SELECT *\n" +
+                "WHERE{\n" +
+                "  ?s rdfs:label ?label .\n" +
+                "  FILTER(?label=\"" + keywordEntity + "\"@en) .\n" +
+                "  FILTER (regex(?s, \"dbpedia\",\"i\")) .\n" +
+                " ?s <http://dbpedia.org/ontology/abstract> ?description .\n" +
+                " FILTER (lang(?description) = \"en\") \n" +
+                " OPTIONAL {?s <http://dbpedia.org/ontology/thumbnail> ?thumb} .\n" +
+                "}";
+        showLog(queryString);
+        return queryString;
+    }
+
     public static String createUrlSearchExpandSLD(String keyword){
         String query = searchExpandEntitiesQuery(keyword);
         String url = "";
@@ -417,8 +481,9 @@ public class Utils {
     }
 
     private static String searchExpandEntitiesQuery(String keyword){
-//        "SELECT distinct *\n" +
-//                "WHERE{\n" +
+        String queryString =
+//                "SELECT distinct *\n" +
+//                " WHERE{\n" +
 //                " ?s rdfs:label ?label .\n" +
 //                " FILTER regex(?label, \"" + keyword + "\",'i'). \n" +
 //                " FILTER regex(?s, \"dbpedia\", 'i'). \n" +
@@ -428,18 +493,39 @@ public class Utils {
 //                " OPTIONAL {?s <http://dbpedia.org/ontology/thumbnail> ?thumb} .\n" +
 //                "}\n" +
 //                "LIMIT 8";
-        String queryString =
-                "SELECT distinct *\n" +
-                " WHERE{\n" +
-                " ?s rdfs:label ?label .\n" +
-                " FILTER regex(?label, \"" + keyword + "\",'i'). \n" +
-                " FILTER regex(?s, \"dbpedia\", 'i'). \n" +
-                " FILTER langMatches( lang(?label), \"en\" )\n" +
-                " ?s <http://dbpedia.org/ontology/abstract> ?description .\n" +
-                " FILTER (lang(?description) = \"en\") \n" +
-                " OPTIONAL {?s <http://dbpedia.org/ontology/thumbnail> ?thumb} .\n" +
-                "}\n" +
-                "LIMIT 8";
+//                Config.PREFIX_DBPEDIA +
+//                        "SELECT distinct *\n" +
+//                        "WHERE{\n" +
+//                        " ?s a dbpedia-owl:Song ;\n" +
+//                        "        rdfs:label ?label .\n" +
+//                        " FILTER regex(?label, \"" + keyword + "\",'i'). \n" +
+//                        " FILTER langMatches( lang(?label), \"en\" )\n" +
+//                        "}\n" +
+//                        "LIMIT 16";
+                Config.PREFIX_DBPEDIA +
+                        "\n" +
+                        "SELECT *\n" +
+                        "WHERE{\n" +
+                        "    { ?s a dbpedia-owl:Person ;\n" +
+                        "          rdfs:label ?label \n" +
+                        "      FILTER regex(?label, \"" + keyword + "\", \"i\")\n" +
+                        "      FILTER (lang(?label) = \"en\") \n" +
+                        "      ?s dbpedia-owl:abstract ?description .\n" +
+                        "      FILTER (lang(?description) = \"en\") " +
+                        "    }\n" +
+                        "    UNION{?s a dbpedia-owl:Film ;\n" +
+                        "          rdfs:label ?label .\n" +
+                        "          FILTER regex(?label, \"" + keyword + "\", \"i\") \n" +
+                        "          FILTER (lang(?label) = \"en\") \n" +
+                        "    }\n" +
+                        "    UNION{?s a dbpedia-owl:Song ;\n" +
+                        "          rdfs:label ?label .\n" +
+                        "          FILTER regex(?label, \"" + keyword + "\", \"i\") \n" +
+                        "          FILTER (lang(?label) = \"en\") \n" +
+                        "    }\n" +
+                        "    OPTIONAL {?s <http://dbpedia.org/ontology/thumbnail> ?thumb}" +
+                        "}\n" +
+                        "LIMIT 16";
         showLog(queryString);
         return queryString;
     }

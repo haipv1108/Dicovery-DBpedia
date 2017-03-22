@@ -510,6 +510,10 @@ public class DetailsActivity extends AppCompatActivity
 
     @Override
     public void playSoundCloudMusic(String streamUrl) {
+        if(mediaPlayer == null){
+            mediaPlayer = new MediaPlayer();
+            mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+        }
         if(mediaPlayer.isPlaying()){
             mediaPlayer.pause();
             mediaPlayer.reset();
