@@ -19,7 +19,12 @@ public class Utils {
     private static final String DBPEDIA_SEARCH_BASE_URL = "http://dbpedia.org/sparql?default-graph-uri=&query=";
 
     public static String createUrlKeywordSearch(String queryString){
-        String url = Config.LOOKUP_DBPEDIA + "QueryClass=&MaxHits=30&QueryString=" + queryString;
+        String url = "";
+        try {
+            url = Config.LOOKUP_DBPEDIA + "QueryClass=&MaxHits=30&QueryString=" + URLEncoder.encode(queryString, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
         showLog("Lookup url: " + url);
         return url;
     }

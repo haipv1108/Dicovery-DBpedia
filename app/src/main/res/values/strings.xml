@@ -25,4 +25,5 @@
     <string name="fs_filter_value">Values</string>
     <string name="fs_filter_distinct">Distinct</string>
     <string name="fs_search_advanced">FS advanced</string>
+    <string name="search_auto">Auto change search</string>
 </resources>

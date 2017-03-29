@@ -13,5 +13,8 @@
         <item
             android:id="@+id/menu_faceted_search_advanced"
             android:title="@string/fs_search_advanced"/>
+        <item
+            android:id="@+id/menu_auto_search"
+            android:title="@string/search_auto"/>
     </group>
 </menu>

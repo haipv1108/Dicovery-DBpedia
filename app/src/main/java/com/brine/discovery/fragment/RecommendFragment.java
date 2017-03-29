@@ -182,7 +182,7 @@ public class RecommendFragment extends Fragment
                     showLogAndToast("Please select uri!");
                     return;
                 }
-                ((RecommendActivity)getActivity()).EXSearch(mSelectedRecommends);
+                ((RecommendActivity)getActivity()).exSearch(mSelectedRecommends);
                 break;
         }
     }
@@ -287,7 +287,7 @@ public class RecommendFragment extends Fragment
         List<Recommend> recommends = new ArrayList<>();
         //recommends.addAll(AppController.getInstance().getCurrentUriDecovery());
         recommends.add(recommend);
-        ((RecommendActivity)getActivity()).EXSearch(recommends);
+        ((RecommendActivity)getActivity()).exSearch(recommends);
     }
 
     private void showLog(String message){
