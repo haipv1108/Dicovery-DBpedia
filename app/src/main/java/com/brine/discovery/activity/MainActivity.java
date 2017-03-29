@@ -37,78 +37,59 @@ import com.brine.discovery.adapter.SelectedResultsAdapter;
 import com.brine.discovery.model.FSResult;
 import com.brine.discovery.model.KeywordSearch;
 import com.brine.discovery.model.Recommend;
+import com.brine.discovery.search.EXSearch;
+import com.brine.discovery.search.FacetedSearch;
+import com.brine.discovery.search.FacetedSearchAdvanced;
+import com.brine.discovery.search.LookupUri;
+import com.brine.discovery.search.SlidingWindow;
 import com.brine.discovery.util.Config;
-import com.brine.discovery.util.DbpediaConstant;
 import com.brine.discovery.util.Utils;
-import com.loopj.android.http.AsyncHttpClient;
-import com.loopj.android.http.AsyncHttpResponseHandler;
-import com.loopj.android.http.RequestParams;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-
-import cz.msebera.android.httpclient.Header;
-
 public class MainActivity extends AppCompatActivity
         implements View.OnClickListener, SelectedResultsAdapter.SelectedAdapterCallback,
-        FSAdapter.FSAdapterCallback{
+        FSAdapter.FSAdapterCallback, FacetedSearch.CallBack, FacetedSearchAdvanced.Callback, EXSearch.Callback{
     private static final String TAG = MainActivity.class.getCanonicalName();
     private static final int MAXITEM = 4;
-    private static final int DEFAULT_TIMEOUT = 20 * 1000;
 
     private static final int LOOKUP_URI = 1;
     private static final int FACTED_SEARCH = 2;
     private static final int SLIDING_WINDOW = 3;
+    private static final int FACTED_SEARCH_ADVANCED = 4;
+    private static final int AUTO_SEARCH_CHANGE = 5;
 
-    public static final String TYPE_OPTION = "type";
-    public static final String ATTRIBUTE_OPTION = "attribute";
-    public static final String VALUE_OPTION = "value";
-    public static final String DISTINCT_OPTION = "distinct";
+    public EditText mEdtSearch;
+    public ListView mListviewKS;
+    public RecyclerView mRecycleRecommed;
+    public RelativeLayout mRltSelectedRecommend;
 
-    private EditText mEdtSearch;
-    private ListView mListviewKS;
-    private RecyclerView mRecycleRecommed;
-    private RelativeLayout mRltSelectedRecommend;
+    public LinearLayout mLinearFSFilter;
+    public LinearLayout mFSFilterType, mFSFilterAttribute, mFSFilterValue, mFSFilterDistinct;
 
-    private LinearLayout mLinearFSFilter;
-    private LinearLayout mFSFilterType, mFSFilterAttribute, mFSFilterValue, mFSFilterDistinct;
+    public KSAdapter mKSAdapter;
+    public SelectedResultsAdapter mRecommedAdapter;
+    public List<KeywordSearch> mKeywordSearchs;
+    public List<Recommend> mSelectedRecommends;
 
-    private KSAdapter mKSAdapter;
-    private SelectedResultsAdapter mRecommedAdapter;
-    private List<KeywordSearch> mKeywordSearchs;
-    private List<Recommend> mSelectedRecommends;
-    private ProgressDialog mProgressDialog;
+    public FSAdapter mFSAdapter;
+    public List<FSResult> mFSResults;
+    public RecyclerView mRecyclerFS;
+    public ImageView mImgSearchOption;
+    public ImageView mImgSearch;
 
-    private FSAdapter mFSAdapter;
-    private List<FSResult> mFSResults;
-    private RecyclerView mRecyclerFS;
-    private ImageView mImgSearchOption;
-    private ImageView mImgSearch;
+    public String keywordSearch = "";
+    public Map<String, String> mapSearchOptions;
 
-    private String keywordSearch = "";
-    private Map<String, String> mapSearchOptions;
-
-    private int typeSearch;
+    public int typeSearch;
 
     private interface TypeSearchCallBack {
         void changeTypeSearch();
@@ -177,6 +158,21 @@ public class MainActivity extends AppCompatActivity
                     break;
                 case SLIDING_WINDOW:
                     break;
+                case FACTED_SEARCH_ADVANCED:
+                    mFSResults.clear();
+                    mFSAdapter.notifyDataSetChanged();
+                    mListviewKS.setVisibility(View.GONE);
+                    mRecyclerFS.setVisibility(View.VISIBLE);
+                    hideFSFilter();
+                    break;
+                case AUTO_SEARCH_CHANGE:
+                    mKeywordSearchs.clear();
+                    mKSAdapter.notifyDataSetChanged();
+                    mFSResults.clear();
+                    mFSAdapter.notifyDataSetChanged();
+                    mListviewKS.setVisibility(View.GONE);
+                    mRecyclerFS.setVisibility(View.GONE);
+                    hideFSFilter();
                 default:
                     break;
             }
@@ -235,6 +231,7 @@ public class MainActivity extends AppCompatActivity
                 new DividerItemDecoration(getApplicationContext(), LinearLayout.VERTICAL));
         mRecyclerFS.setItemAnimator(new DefaultItemAnimator());
         mRecyclerFS.setAdapter(mFSAdapter);
+
     }
 
     @Override
@@ -265,20 +262,34 @@ public class MainActivity extends AppCompatActivity
                     showLogAndToast("Please select uri!");
                     return;
                 }
-                EXSearch(mSelectedRecommends);
+                new EXSearch(MainActivity.this, mSelectedRecommends, MainActivity.this);
                 break;
             case R.id.img_search_option:
                 showPopupSearchOption();
                 break;
             case R.id.img_search:
                 String keyword = getKeywordInput();
+                String keywordRemovedStopWord = removeStopWord(keyword);
                 if(keyword != null){
-                    keywordSearch = keyword;
-                    if(typeSearch == FACTED_SEARCH){
-                        showLogAndToast("Search " + keywordSearch);
-                        facetedSearch(keywordSearch, "");
-                    }else {
-                        slidingWindow(keywordSearch);
+                    keywordSearch = keywordRemovedStopWord;
+                    switch (typeSearch){
+                        case FACTED_SEARCH:
+                            showLogAndToast("Search " + keywordSearch);
+                            new FacetedSearch(MainActivity.this, keywordSearch, "", mFSResults, mFSAdapter, MainActivity.this);
+                            break;
+                        case SLIDING_WINDOW:
+                            new SlidingWindow(MainActivity.this, keywordSearch);
+                            break;
+                        case FACTED_SEARCH_ADVANCED:
+                            new FacetedSearchAdvanced(MainActivity.this, keywordSearch, MainActivity.this);
+                            break;
+                        case AUTO_SEARCH_CHANGE:
+                            if(keywordSearch.split(" ").length <= 3){
+                                activeLookupUri();
+                            }else{
+                                activeFSAdvanced();
+                            }
+                            break;
                     }
                 }
                 break;
@@ -295,6 +306,67 @@ public class MainActivity extends AppCompatActivity
                 getDistinctFilter();
                 break;
         }
+    }
+
+    @Override
+    public void showResultRecommend(String response) {
+        Intent intent = new Intent(MainActivity.this, RecommendActivity.class);
+        intent.putExtra(RecommendActivity.DATA, response);
+        startActivity(intent);
+    }
+
+    @Override
+    public void runFacetedSearch(String keywordSearch, String optionSearch) {
+        new FacetedSearch(MainActivity.this, keywordSearch, optionSearch, mFSResults, mFSAdapter, MainActivity.this);
+    }
+
+    @Override
+    public void FSCompleted() {
+        showLogAndToast("Done!");
+        if(mKeywordSearchs.size() == 0){
+            showLogAndToast("Size = 0");
+            activeFSAdvanced();
+        }
+    }
+
+    LookupUri.Callback lookupCallback = new LookupUri.Callback() {
+        @Override
+        public void showMessageKSNoResult(String message) {
+            showLogAndToast(message);
+        }
+
+        @Override
+        public void completedKS() {
+        }
+    };
+
+    private void activeLookupUri(){
+        mKeywordSearchs.clear();
+        mKSAdapter.notifyDataSetChanged();
+        mListviewKS.setVisibility(View.VISIBLE);
+        mRecyclerFS.setVisibility(View.GONE);
+        hideFSFilter();
+        new LookupUri(MainActivity.this, keywordSearch, new LookupUri.Callback() {
+            @Override
+            public void showMessageKSNoResult(String message) {
+                showLogAndToast("KS no results. Continue with Faceted search!");
+                activeFSAdvanced();
+            }
+
+            @Override
+            public void completedKS() {
+
+            }
+        });
+    }
+
+    private void activeFSAdvanced(){
+        mFSResults.clear();
+        mFSAdapter.notifyDataSetChanged();
+        mListviewKS.setVisibility(View.GONE);
+        mRecyclerFS.setVisibility(View.VISIBLE);
+        hideFSFilter();
+        new FacetedSearchAdvanced(MainActivity.this, keywordSearch, MainActivity.this);
     }
 
     //+++++++++++++++++++++++++++++++++++++++++++
@@ -358,7 +430,7 @@ public class MainActivity extends AppCompatActivity
                     public void onClick(DialogInterface dialogInterface, int i) {
                         String uri = (String) entitiesMap.keySet().toArray()[i];
                         String option = " ?s1 a " + "<" + uri + "> .\n" ;
-                        facetedSearch(keywordSearch, option);
+                        new FacetedSearch(MainActivity.this, keywordSearch, option, mFSResults, mFSAdapter, MainActivity.this);
                         dialogInterface.dismiss();
                     }
                 })
@@ -508,7 +580,7 @@ public class MainActivity extends AppCompatActivity
                         String optionSearch = option + "\n" +
                                 "    filter (?s2 = <" + uri + ">) .";
                         dialogInterface.dismiss();
-                        facetedSearch(keywordSearch, optionSearch);
+                        new FacetedSearch(MainActivity.this, keywordSearch, optionSearch, mFSResults, mFSAdapter, MainActivity.this);
                     }
                 })
                 .setPositiveButton("OK", new DialogInterface.OnClickListener() {
@@ -657,7 +729,7 @@ public class MainActivity extends AppCompatActivity
                         String optionSearch = option + "\n" +
                                 "    filter (?s2 = <" + uri + ">) .";
                         dialogInterface.dismiss();
-                        facetedSearch(keywordSearch, optionSearch);
+                        new FacetedSearch(MainActivity.this, keywordSearch, optionSearch, mFSResults, mFSAdapter, MainActivity.this);
                     }
                 })
                 .setPositiveButton("OK", new DialogInterface.OnClickListener() {
@@ -732,7 +804,7 @@ public class MainActivity extends AppCompatActivity
                         String uri = (String) entitiesMap.keySet().toArray()[i];
                         String option = "filter (?s1 = <" + uri + ">) .";
                         dialogInterface.dismiss();
-                        facetedSearch(keywordSearch, option);
+                        new FacetedSearch(MainActivity.this, keywordSearch, option, mFSResults, mFSAdapter, MainActivity.this);
                     }
                 })
                 .setPositiveButton("OK", new DialogInterface.OnClickListener() {
@@ -770,7 +842,7 @@ public class MainActivity extends AppCompatActivity
                             callBack.changeTypeSearch();
                         }
                         return true;
-                    case R.id.menu_facted_search:
+                    case R.id.menu_faceted_search:
                         if(typeSearch != FACTED_SEARCH){
                             typeSearch = FACTED_SEARCH;
                             callBack.changeTypeSearch();
@@ -779,6 +851,18 @@ public class MainActivity extends AppCompatActivity
                     case R.id.menu_sliding_window:
                         if(typeSearch != SLIDING_WINDOW){
                             typeSearch = SLIDING_WINDOW;
+                            callBack.changeTypeSearch();
+                        }
+                        return true;
+                    case R.id.menu_faceted_search_advanced:
+                        if(typeSearch != FACTED_SEARCH_ADVANCED){
+                            typeSearch = FACTED_SEARCH_ADVANCED;
+                            callBack.changeTypeSearch();
+                        }
+                        return true;
+                    case R.id.menu_auto_search:
+                        if(typeSearch != AUTO_SEARCH_CHANGE){
+                            typeSearch = AUTO_SEARCH_CHANGE;
                             callBack.changeTypeSearch();
                         }
                         return true;
@@ -798,241 +882,29 @@ public class MainActivity extends AppCompatActivity
         return keywords;
     }
 
-    private void facetedSearch(String keywords, String optionSearch){
-        mFSResults.clear();
-        mFSAdapter.notifyDataSetChanged();
+    @Override
+    public void hideFSFilterCallback() {
         hideFSFilter();
-
-        String url = Utils.createUrlFacetedSearch(keywords, optionSearch);
-
-        final ProgressDialog progressDialog = new ProgressDialog(this);
-        progressDialog.setMessage("Loading...");
-        progressDialog.show();
-
-        StringRequest stringRequest = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
-            @Override
-            public void onResponse(String response) {
-                if(progressDialog.isShowing()){
-                    progressDialog.dismiss();
-                }
-                parseFSResult(response);
-            }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                if(progressDialog.isShowing()){
-                    progressDialog.dismiss();
-                }
-                showLog("Error: " + error.getMessage());
-            }
-        });
-        AppController.getInstance().addToRequestQueue(stringRequest, "factedsearch");
     }
 
-    private void parseFSResult(String response){
-        try {
-            JSONObject jsonObject = new JSONObject(response);
-            JSONArray data = jsonObject.getJSONObject("results").getJSONArray("bindings");
-            if(data.length() == 0){
-                showLogAndToast("No results");
-            }else{
-                for(int i = 0; i < data.length(); i++){
-                    JSONObject element = data.getJSONObject(i);
-                    String uri = element.getJSONObject("c1").getString("value");
-
-                    List<String> splitUri = Arrays.asList(uri.split("/"));
-                    String localName = splitUri.get(splitUri.size()-1);
-                    String label = localName.replace("_", " ");
-                    String description = element.getJSONObject("c2").getString("value");
-
-                    FSResult result = new FSResult(uri, label, description, null);
-                    updateFSResult(result);
-                }
-                if(mFSResults.size() == 0){
-                    showLogAndToast("No results");
-                }else{
-                    searchImageFSSearch();
-                }
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+    @Override
+    public void showFSFilterCallback() {
+        showFSFilter();
     }
 
-    private void updateFSResult(FSResult result){
-        if(!isContained(result.getUri()) && isDbpediaSource(result.getUri())){
-            mFSResults.add(result);
-            mFSAdapter.notifyDataSetChanged();
-            showFSFilter();
-        }
-    }
 
-    private boolean isContained(String uri){
-        for(FSResult result : mFSResults){
-            if(result.getUri().equals(uri)){
-                return true;
+    private static String removeStopWord(String keyword){
+        if(keyword == null || keyword.isEmpty())
+            return "";
+        String result = "";
+        List<String> splitWord = Arrays.asList(keyword.split(" "));
+        List<String> stopWord = Arrays.asList(Config.STOP_WORD);
+        for(String word : splitWord){
+            if(!stopWord.contains(word)){
+                result += " " + word;
             }
         }
-        return false;
-    }
-
-    private boolean isDbpediaSource(String uri){
-        if(uri.contains("dbpedia.org")){
-            return true;
-        }
-        return false;
-    }
-
-    private void searchImageFSSearch(){
-        if(mFSResults.size() == 0){
-            return;
-        }
-        String query = "SELECT ?uri ?img\n" +
-                "WHERE\n" +
-                "{\n" +
-                "?uri <http://dbpedia.org/ontology/thumbnail> ?img .\n" +
-                "FILTER (";
-        for(int i = 0; i < mFSResults.size() - 1; i++){
-            query += " ?uri = <" + mFSResults.get(i).getUri() + "> || ";
-        }
-        query += " ?uri = <" + mFSResults.get(mFSResults.size() - 1) + "> ) }";
-        String url = Utils.createUrlDbpedia(query);
-
-        StringRequest request = new StringRequest(Request.Method.GET, url,
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        try {
-                            JSONObject jsonObject = new JSONObject(response);
-                            JSONArray data = jsonObject.getJSONObject("results").getJSONArray("bindings");
-                            if(data.length() == 0){
-                                showLog("No result");
-                            }else{
-                                for(int i = 0; i < data.length(); i++){
-                                    JSONObject element = data.getJSONObject(i);
-                                    String uri = element.getJSONObject("uri").getString("value");
-                                    String thumb = element.getJSONObject("img").getString("value");
-                                    insertFSThumbnail(uri, thumb);
-                                }
-                            }
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                },  new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                showLog("Error: " + error.getMessage());
-            }
-        });
-        AppController.getInstance().addToRequestQueue(request, "lookup");
-    }
-
-    private void insertFSThumbnail(String uri, String thumb){
-        for(FSResult fs : mFSResults){
-            if(fs.getUri().equals(uri)){
-                fs.setThumbnail(thumb);
-                mKSAdapter.notifyDataSetChanged();
-                return;
-            }
-        }
-    }
-
-    private void slidingWindow(String keywords){
-
-    }
-
-    private void EXSearch(final List<Recommend> recommends){
-        AppController.getInstance().setUriDecovery(recommends);
-        mProgressDialog = new ProgressDialog(this);
-        mProgressDialog.setMessage("Loading...");
-        mProgressDialog.show();
-
-        AsyncHttpClient client = new AsyncHttpClient();
-        RequestParams params = new RequestParams();
-        for(Recommend param : recommends){
-            params.add("nodes[]", param.getUri());
-        }
-        showLog("Params: " + params.toString());
-        client.post(Config.DISCOVERYHUB_RECOMMEND_URL, params, new AsyncHttpResponseHandler() {
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
-                String response = new String(responseBody);
-                showLog(response);
-                parserPostDataRecommend(response);
-            }
-
-            @Override
-            public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
-                showLogAndToast("Error request to server. Try again!");
-                mProgressDialog.dismiss();
-            }
-        });
-    }
-
-    private void parserPostDataRecommend(String response){
-        if(response == null) return;
-        try {
-            JSONObject json = new JSONObject(response);
-            String id = json.getString("id");
-            List<String> splitId = Arrays.asList(id.split("/"));
-            String key = splitId.get(splitId.size() - 1);
-            getDataRecomendation(key);
-        } catch (JSONException e1) {
-            e1.printStackTrace();
-        }
-    }
-
-    private void getDataRecomendation(String key){
-        AsyncHttpClient client = new AsyncHttpClient();
-        client.setTimeout(DEFAULT_TIMEOUT);
-        String url = "http://api.discoveryhub.co/recommendations/" + key;
-        showLog("RECOMMEND API: " + url);
-        client.get(url, new AsyncHttpResponseHandler() {
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
-                String response = new String(responseBody);
-                mProgressDialog.dismiss();
-                try {
-                    JSONArray jsonArray = new JSONArray(response);
-                    if(jsonArray.length() == 1 &&
-                            jsonArray.getJSONObject(0).getJSONArray("results").length() == 1){
-                        showLogAndToast("No results. Try again!");
-                    }else if(checkRusultContent(response)){
-                        showResultRecommendation(response);
-                    }
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            @Override
-            public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
-                showLogAndToast("Error request to server. Try again!");
-                mProgressDialog.dismiss();
-            }
-        });
-    }
-
-    private boolean checkRusultContent(String response){
-        try {
-            JSONArray jsonArray = new JSONArray(response);
-            for(int i = 0; i < jsonArray.length(); i++){
-                String uri = jsonArray.getJSONObject(i).getString("uri");
-                if(DbpediaConstant.isContext(uri)){
-                    return true;
-                }
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-
-    private void showResultRecommendation(String response){
-        Intent intent = new Intent(MainActivity.this, RecommendActivity.class);
-        intent.putExtra(RecommendActivity.DATA, response);
-        startActivity(intent);
+        return result.trim();
     }
 
     private void listeningEdtSearch(){
@@ -1048,10 +920,10 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void afterTextChanged(final Editable editable) {
                 if(typeSearch == LOOKUP_URI){
-                    String word = String.valueOf(editable.toString().trim());
-                    if(word.length() >= 3){
+                    String keyword = String.valueOf(editable.toString().trim());
+                    if(keyword.length() >= 3){
                         hideSelectedRecommend();
-                        lookupUri(word);
+                        new LookupUri(MainActivity.this, keyword, lookupCallback);
                     }else{
                         clearLookupResult();
                         if(mSelectedRecommends.size() > 0){
@@ -1104,141 +976,6 @@ public class MainActivity extends AppCompatActivity
     private void clearLookupResult(){
         mKeywordSearchs.clear();
         mKSAdapter.notifyDataSetChanged();
-    }
-
-    private void lookupUri(String word){
-        AppController.getInstance().cancelPendingRequests("lookup");
-        String url = Utils.createUrlKeywordSearch(word);
-        StringRequest stringRequest = new StringRequest(
-                Request.Method.GET, url, new Response.Listener<String>() {
-            @Override
-            public void onResponse(String response) {
-                clearLookupResult();
-                parseXmlLookupResult(response);
-            }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                showLog(error.getMessage());
-                showLogAndToast("No results");
-            }
-        });
-        AppController.getInstance().addToRequestQueue(stringRequest, "lookup");
-    }
-
-    private void parseXmlLookupResult(String response){
-        if(response == null) return;
-        InputStream inputStream = new ByteArrayInputStream(
-                response.getBytes(StandardCharsets.UTF_8));
-
-        try {
-            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-            Document doc = dBuilder.parse(inputStream);
-
-            Element root = doc.getDocumentElement();
-
-            NodeList nodeList = root.getChildNodes();
-            if(nodeList.getLength() == 1){
-                showLogAndToast("No result. Try other keyword!");
-                return;
-            }
-            for(int i = 0; i < nodeList.getLength(); i++){
-                Node node = nodeList.item(i);
-                if(node instanceof Element){
-                    Element result = (Element) node;
-                    String label = result.getElementsByTagName("Label").item(0).getTextContent();
-                    String uri = result.getElementsByTagName("URI").item(0).getTextContent();
-                    String description = result.getElementsByTagName("Description")
-                            .item(0).getTextContent();
-
-                    if(uri.isEmpty() || description.isEmpty()) continue;
-                    NodeList childNodeList = result.getElementsByTagName("Class");
-                    String type = "";
-                    if(childNodeList.getLength() == 0){
-                        type = "Other";
-                    }else{
-                        String typeValue = ((Element)childNodeList.item(0)).getElementsByTagName("Label").item(0).getTextContent();
-                        type = firstUpperString(typeValue);
-                    }
-
-                    KeywordSearch ks = new KeywordSearch(label, uri, description, null, type);
-                    mKeywordSearchs.add(ks);
-                    mKSAdapter.notifyDataSetChanged();
-                }
-            }
-            searchImageForUriKSSearch();
-        } catch (ParserConfigurationException | SAXException | IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private String firstUpperString(String word){
-        String result = "";
-        List<String> splitWord = Arrays.asList(word.split(" "));
-        for(int i = 0; i < splitWord.size(); i++){
-            String value = splitWord.get(i);
-            String type = value.substring(0, 1).toUpperCase() + value.substring(1);
-            result += " " + type;
-        }
-        return result.trim();
-    }
-
-    private void searchImageForUriKSSearch(){
-        if(mKeywordSearchs.size() == 0){
-            return;
-        }
-        String query = "SELECT ?uri ?img\n" +
-                "WHERE\n" +
-                "{\n" +
-                "?uri <http://dbpedia.org/ontology/thumbnail> ?img .\n" +
-                "FILTER (";
-        for(int i = 0; i < mKeywordSearchs.size() - 1; i++){
-            query += " ?uri = <" + mKeywordSearchs.get(i).getUri() + "> || ";
-        }
-        query += " ?uri = <" + mKeywordSearchs.get(mKeywordSearchs.size() - 1) + "> ) }";
-        showLog("Query: " + query);
-        String url = Utils.createUrlDbpedia(query);
-        showLog("URL: " + url);
-
-        StringRequest request = new StringRequest(Request.Method.GET, url,
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        try {
-                            JSONObject jsonObject = new JSONObject(response);
-                            JSONArray data = jsonObject.getJSONObject("results").getJSONArray("bindings");
-                            if(data.length() == 0){
-                                showLog("No result");
-                            }else{
-                                for(int i = 0; i < data.length(); i++){
-                                    JSONObject element = data.getJSONObject(i);
-                                    String uri = element.getJSONObject("uri").getString("value");
-                                    String thumb = element.getJSONObject("img").getString("value");
-                                    insertKSThumbnail(uri, thumb);
-                                }
-                            }
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                },  new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                showLog("Error: " + error.getMessage());
-            }
-        });
-        AppController.getInstance().addToRequestQueue(request, "lookup");
-    }
-
-    private void insertKSThumbnail(String uri, String thumb){
-        for(KeywordSearch ks : mKeywordSearchs){
-            if(ks.getUri().equals(uri)){
-                ks.setThumb(thumb);
-                mKSAdapter.notifyDataSetChanged();
-                return;
-            }
-        }
     }
 
     private void showLog(String message){

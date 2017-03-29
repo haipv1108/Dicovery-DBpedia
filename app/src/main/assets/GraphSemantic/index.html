@@ -16,34 +16,43 @@
     }
   </style>
 
-  <script type="text/javascript" src="vis.js"></script>
-  <link href="vis.css" rel="stylesheet" type="text/css" />
-  <script type="text/javascript" src="jquery.js"></script>
+  <script type="text/javascript" src="js/vis.js"></script>
+  <link href="css/vis.css" rel="stylesheet" type="text/css" />
+  <script type="text/javascript" src="js/jquery.js"></script>
 
-  <script type="text/javascript">
+
+  <script type="text/javascript"> 
     const DBPEDIA_URL = "http://dbpedia-test.inria.fr/sparql?default-graph-uri=&query=";
     const RESULT_RETURN_TYPE = "&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000";
 
     var nodes = []
     var edges = []
+    var vertexs = [];
     var network = null;
 
     var fromUris = [];
     var recommendedUri;
-
-    var vertexs = [];
 
     window.onload = function(e){
       init();
     }
 
     function init(){
+        // recommendedUri = "http://dbpedia.org/resource/Lionel_Jeffries";
+        // fromUris = ["http://dbpedia.org/resource/Love", "http://dbpedia.org/resource/The_Love_Boat"];
+        
+        // recommendedUri = "http://dbpedia.org/resource/Tom_Hanks";
+        // fromUris = ["http://dbpedia.org/resource/Leonardo_DiCaprio"];
+
+        // get_graph_data();
+
         recommendedUri = JSInterface.getRecommendedUri();
         var length = JSInterface.getLengthFromUris();
         for(var i = 0; i < length; i++){
             var uri = JSInterface.getValueOfFromUris(i);
             fromUris.push(uri);
         }
+        JSInterface.showToast(fromUris.length);
 
         JSInterface.showProgressDialog();
         get_graph_data();
@@ -105,6 +114,21 @@
         });
     }
 
+    function create_url_dbpedia(uris){
+        var query = "SELECT DISTINCT ?uri ?label ?description WHERE { ?uri rdfs:label ?label . OPTIONAL {?uri rdfs:comment ?description} . FILTER (";
+            for(var i = 0; i < uris.length; i++){
+                if(i == 0){
+                    query += "?uri=<" + uris[i] + "> ";
+                }else{
+                    query += "|| ?uri=<" + uris[i] + "> ";
+                }
+            }
+        query += ") . FILTER ( lang(?label) = 'en' && lang(?description) = 'en' )}";
+        console.log(query);
+        var url = DBPEDIA_URL + encodeURIComponent(query) + RESULT_RETURN_TYPE;
+        return url;
+    }
+
     function parse_details_info(root_data, data){
         console.log("root data");
         console.log(root_data);
@@ -114,48 +138,27 @@
                 var uri = arr_result[i].uri.value;
                 var label = arr_result[i].label.value;
                 var description = arr_result[i].description.value;
-                var image = "";
-                if(arr_result[i].image != undefined){
-                    image = arr_result[i].image.value;
-                }else{
-                    image = "no_image.png";
-                }
-                update_root_data(root_data, uri, label, description, image);
+                update_root_data(root_data, uri, label, description);
             }
             draw_graph(root_data);
         }
     }
 
-    function update_root_data(root_data, uri, label, description, image){
+    function update_root_data(root_data, uri, label, description){
         for(var i = 0; i < root_data.length; i++){
             var x_uri = root_data[i].x.value;
             var z_uri = root_data[i].z.value;
             if(x_uri == uri){
                 root_data[i].x.label = label;
                 root_data[i].x.description = description;
-                root_data[i].x.image = image;
+                // root_data[i].x.image = image;
             }
             if(z_uri == uri){
                 root_data[i].z.label = label;
                 root_data[i].z.description = description;
-                root_data[i].z.image = image;
+                // root_data[i].z.image = image;
             }
         }
-    }
-
-    function create_url_dbpedia(uris){
-        var query = "SELECT DISTINCT ?uri ?image ?label ?description WHERE { ?uri rdfs:label ?label . OPTIONAL {?uri rdfs:comment ?description} . OPTIONAL {?uri <http://dbpedia.org/ontology/thumbnail> ?image} . FILTER (";
-        for(var i = 0; i < uris.length; i++){
-            if(i == 0){
-                query += "?uri=<" + uris[i] + "> ";
-            }else{
-                query += "|| ?uri=<" + uris[i] + "> ";
-            }
-        }
-        query += ") . FILTER ( lang(?label) = 'en' && lang(?description) = 'en' )}";
-        console.log(query);
-        var url = DBPEDIA_URL + encodeURIComponent(query) + RESULT_RETURN_TYPE;
-        return url;
     }
 
     function draw_graph(data){
@@ -170,7 +173,8 @@
                             id:             create_id_vertex(),
                             uri:            x_uri,
                             shape:          "circularImage",
-                            image:          data[i].x.image,
+                            // image:          data[i].x.image,
+                            image:          "css/background.png",
                             label:          data[i].x.label,
                             description:    data[i].x.description,
                             target_id:      []
@@ -183,7 +187,8 @@
                             id:             create_id_vertex(),
                             uri:            z_uri,
                             shape:          "circularImage",
-                            image:          data[i].z.image,
+                            // image:          data[i].z.image,
+                            image:          "css/background.png",
                             label:          data[i].z.label,
                             description:    data[i].z.description,
                             target_id:      []
@@ -200,14 +205,17 @@
             var vertex_x = find_vertext_by_uri(x_uri);
             var vertex_z = find_vertext_by_uri(z_uri);
             if(vertex_x != null && vertex_z != null){
-                if(vertex_x.target_id.indexOf(vertex_z.id) == -1 &&
+                if(vertex_x.target_id.indexOf(vertex_z.id) == -1 && 
                     vertex_z.target_id.indexOf(vertex_x.id) == -1){
                     vertex_x.target_id.push(vertex_z.id);
                 }
             }
         }
+
+        console.log("vertexs");
         console.log(vertexs);
-        draw();
+
+        draw_vis_graph();
     }
 
     function find_vertext_by_uri(uri){
@@ -233,15 +241,38 @@
         var id = max_id + 1;
         return id;
     }
-
-    function draw(){
+    
+    /*
+        var nodes: arrays
+        var edges: arrays
+        var vertexs: arrays
+        var network = null;
+    */
+    function draw_vis_graph(){
+        console.log("recommendedUri : " + recommendedUri);
         for(var i = 0; i < vertexs.length; i++){
-            nodes.push({
-                id:     vertexs[i].id,
-                shape:  vertexs[i].shape,
-                image:  vertexs[i].image,
-                label:  vertexs[i].label
-            });
+            if(vertexs[i].uri == recommendedUri){
+                nodes.push({
+                    id:     vertexs[i].id,
+                    shape:  vertexs[i].shape,
+                    image:  vertexs[i].image,
+                    label:  vertexs[i].label,
+                });
+            }else if(fromUris.indexOf(vertexs[i].uri) != -1){
+                nodes.push({
+                    id:     vertexs[i].id,
+                    shape:  vertexs[i].shape,
+                    image:  vertexs[i].image,
+                    label:  vertexs[i].label,
+                });
+            }else {
+                nodes.push({
+                    id:     vertexs[i].id,
+                    shape:  vertexs[i].shape,
+                    image:  vertexs[i].image,
+                    label:  vertexs[i].label,
+                });
+            }
             for(var j = 0; j < vertexs[i].target_id.length; j++){
                 var vertex_reverse = {
                     from:   vertexs[i].target_id[j],
@@ -250,7 +281,7 @@
                 if(edges.indexOf(vertex_reverse) == -1){
                     edges.push({
                         from:   vertexs[i].id,
-                        to:     vertexs[i].target_id[j]
+                        to:     vertexs[i].target_id[j],
                     });
                 }
             }
@@ -263,44 +294,43 @@
         };
 
         var options = {
-                autoResize: true,
-                width: '100%',
-                height: '100%',
-                nodes: {
-                    borderWidth:2,
-                    size:25,
-                    color: {
-                        border: '#222222',
-                        background: '#666666'
-                    },
-                    font:{color:'#eeeeee'}
+            autoResize: true,
+            width: '100%',
+            height: '100%',
+            layout: {
+              hierarchical: {
+                sortMethod: 'directed'
+              }
+            },
+            nodes: {
+                borderWidth: 2,
+                size: 25,
+                color: {
+                    border: '#222222',
+                    background: '#666666'
                 },
-                edges: {
-                    color: 'lightgray'
-                }
-            };
+                font: {color: '#eeeeee'}
+            },
+            edges: {
+              smooth: true,
+              color: 'lightgray',
+            }
+        };
 
         JSInterface.dismissProgressDialog();
 
         network = new vis.Network(container, data, options);
         network.on('selectNode', selectNode);
-        network.on('deselectNode', deselectNode);
-        network.on('selectEdge', selectEdge);
 
         function selectNode(data){
             console.log(data);
             var vertex = find_vertex_by_id(data.nodes[0]);
             console.log(vertex.description);
-            JSInterface.showSnackBar(vertexs[position].description);
-        }
-
-        function selectEdge(data){
-            console.log('selectEdge');
-            console.log(data);
+            JSInterface.showSnackBar(vertex.label, vertex.description);
         }
     }
   </script>
-
+  
 </head>
 
 <body>

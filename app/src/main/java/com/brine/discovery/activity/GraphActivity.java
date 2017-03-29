@@ -46,7 +46,7 @@ public class GraphActivity extends AppCompatActivity {
                 new JavaScriptInterface(this, fromUris, recommendedUri, mCoordinatorLayout),
                 "JSInterface");
 
-        mWebview.loadUrl("file:///android_asset/index.html");
+        mWebview.loadUrl("file:///android_asset/GraphSemantic/index.html");
     }
 
     public class JavaScriptInterface{
@@ -107,9 +107,9 @@ public class GraphActivity extends AppCompatActivity {
         }
 
         @JavascriptInterface
-        public void showSnackBar(String message){
+        public void showSnackBar(String label, String description){
             Snackbar snackbar = Snackbar
-                    .make(mCoordinatorLayout, message, Snackbar.LENGTH_LONG)
+                    .make(mCoordinatorLayout, label + "\n" + description, Snackbar.LENGTH_LONG)
                     .setDuration(Snackbar.LENGTH_LONG);
             View snackbarView = snackbar.getView();
             TextView textView = (TextView) snackbarView.findViewById(android.support.design.R.id.snackbar_text);

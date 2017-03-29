@@ -12,6 +12,6 @@
     <dimen name="article_keylines">90dp</dimen>
     <dimen name="md_keylines">16dp</dimen>
     <dimen name="article_titles">20sp</dimen>
-    <dimen name="card_margin">5dp</dimen>
+    <dimen name="card_margin">2dp</dimen>
     <dimen name="card_radius">0dp</dimen>
 </resources>

@@ -18,10 +18,12 @@
     <string name="seek_to_hint">Seconds</string>
 
     <string name="menu_lookup_uri">Lookup uri</string>
-    <string name="menu_facted_search">Facted search</string>
+    <string name="menu_facted_search">Faceted search</string>
     <string name="menu_sliding_window">Sliding window</string>
     <string name="fs_filter_type">Type</string>
     <string name="fs_filter_attribute">Attributes</string>
     <string name="fs_filter_value">Values</string>
     <string name="fs_filter_distinct">Distinct</string>
+    <string name="fs_search_advanced">FS advanced</string>
+    <string name="search_auto">Auto change search</string>
 </resources>

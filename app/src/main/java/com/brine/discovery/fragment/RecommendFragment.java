@@ -20,7 +20,6 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
-import com.brine.discovery.AppController;
 import com.brine.discovery.R;
 import com.brine.discovery.activity.DetailsActivity;
 import com.brine.discovery.activity.RecommendActivity;
@@ -39,6 +38,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+
+import static com.brine.discovery.message.MessageObserverManager.ADD_ITEM;
+import static com.brine.discovery.message.MessageObserverManager.DELETE_ITEM;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -63,7 +65,6 @@ public class RecommendFragment extends Fragment
     private SelectedResultsAdapter mRecommedAdapter;
     private String mResponse;
     private boolean mTopType;
-    private int lengthCurrentUri = 0;
 
     public RecommendFragment() {
     }
@@ -82,10 +83,9 @@ public class RecommendFragment extends Fragment
 
         initUI(view);
         init();
-        lengthCurrentUri = AppController.getInstance().getCurrentUriDecovery().size();
         MessageObserverManager.getInstance().addItem(this);
-        initDataSelected();
-
+        hideSelectedRecommend();
+        getSelectedData();
         if(mTopType){
             parserTopResponseData();
         }else{
@@ -93,35 +93,18 @@ public class RecommendFragment extends Fragment
         }
     }
 
-    public void initDataSelected() {
-        List<Recommend> recommends = MessageObserverManager.getInstance().getSelectedRecommendData();
-        recommends.addAll(AppController.getInstance().getCurrentUriDecovery());
-        if(recommends.size() <= lengthCurrentUri){
-            hideSelectedRecommend();
-            return;
+    @Override
+    public void updateSelectedItem(Recommend recommend, int type) {
+        if(type == ADD_ITEM){
+            mSelectedRecommends.add(recommend);
+            showSelectedRecommend();
         }
-        showSelectedRecommend();
-        for(Recommend recommend : recommends){
-            if(!mSelectedRecommends.contains(recommend)){
-                mSelectedRecommends.add(recommend);
+        if(type == DELETE_ITEM){
+            mSelectedRecommends.remove(recommend);
+            if(mSelectedRecommends.size() == 0){
+                hideSelectedRecommend();
             }
         }
-        mRecommedAdapter.notifyDataSetChanged();
-    }
-
-    @Override
-    public void updateSelectedItem(Recommend recommend) {
-        showSelectedRecommend();
-        if(mSelectedRecommends.contains(recommend)){
-            showLogAndToast("Item added. Please choice other item!");
-            return;
-        }
-        if(mSelectedRecommends.size() == MAXITEM){
-            mSelectedRecommends.remove(mSelectedRecommends.size() - 1);
-            mRecommedAdapter.notifyDataSetChanged();
-            showLogAndToast("Max item is 4!");
-        }
-        mSelectedRecommends.add(recommend);
         mRecommedAdapter.notifyDataSetChanged();
     }
 
@@ -157,17 +140,23 @@ public class RecommendFragment extends Fragment
         mRecycleRecommed.setAdapter(mRecommedAdapter);
     }
 
+    private void getSelectedData(){
+        mSelectedRecommends.addAll(MessageObserverManager.getInstance().getSelectedRecommendData());
+        mRecommedAdapter.notifyDataSetChanged();
+        if(mSelectedRecommends.isEmpty()){
+            hideSelectedRecommend();
+        }else{
+            showSelectedRecommend();
+        }
+    }
+
     @Override
     public void onClickItem(final Recommend recommend) {
         new AlertDialog.Builder(getContext())
                 .setMessage("Are you sure you want to delete " + recommend.getLabel())
                 .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {
-                        mSelectedRecommends.remove(recommend);
-                        mRecommedAdapter.notifyDataSetChanged();
-                        if(mSelectedRecommends.isEmpty()){
-                            hideSelectedRecommend();
-                        }
+                        MessageObserverManager.getInstance().notifyAllObserver(recommend, DELETE_ITEM);
                     }
                 })
                 .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
@@ -193,7 +182,7 @@ public class RecommendFragment extends Fragment
                     showLogAndToast("Please select uri!");
                     return;
                 }
-                ((RecommendActivity)getActivity()).EXSearch(mSelectedRecommends);
+                ((RecommendActivity)getActivity()).exSearch(mSelectedRecommends);
                 break;
         }
     }
@@ -274,7 +263,7 @@ public class RecommendFragment extends Fragment
     public void addSearch(Recommend recommend) {
         if(!isContain(recommend)){
             if(mSelectedRecommends.size() < MAXITEM){
-                MessageObserverManager.getInstance().notifyAllObserver(recommend);
+                MessageObserverManager.getInstance().notifyAllObserver(recommend, ADD_ITEM);
             }else{
                 showLogAndToast("Max item. Can't choice!");
             }
@@ -284,6 +273,7 @@ public class RecommendFragment extends Fragment
     }
 
     private boolean isContain(Recommend recommend){
+        if(mSelectedRecommends.size() == 0) return false;
         for(Recommend rm : mSelectedRecommends){
             if(rm.getUri().equals(recommend.getUri())){
                 return true;
@@ -295,9 +285,9 @@ public class RecommendFragment extends Fragment
     @Override
     public void exSearch(Recommend recommend) {
         List<Recommend> recommends = new ArrayList<>();
-        recommends.addAll(AppController.getInstance().getCurrentUriDecovery());
+        //recommends.addAll(AppController.getInstance().getCurrentUriDecovery());
         recommends.add(recommend);
-        ((RecommendActivity)getActivity()).EXSearch(recommends);
+        ((RecommendActivity)getActivity()).exSearch(recommends);
     }
 
     private void showLog(String message){
