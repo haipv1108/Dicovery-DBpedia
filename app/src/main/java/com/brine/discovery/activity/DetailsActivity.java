@@ -33,9 +33,11 @@ import com.brine.discovery.AppController;
 import com.brine.discovery.R;
 import com.brine.discovery.adapter.SoundCloudAdapter;
 import com.brine.discovery.adapter.YoutubeAdapter;
+import com.brine.discovery.model.Recommend;
 import com.brine.discovery.model.SCMusic;
 import com.brine.discovery.model.TypeUri;
 import com.brine.discovery.model.YoutubeVideo;
+import com.brine.discovery.search.EXSearch;
 import com.brine.discovery.util.Config;
 import com.brine.discovery.util.Utils;
 import com.brine.discovery.view.OnSwipeTouchListener;
@@ -59,14 +61,14 @@ import static android.R.style.TextAppearance_Material_Body1;
 import static android.R.style.TextAppearance_Material_Body2;
 
 public class DetailsActivity extends AppCompatActivity
-        implements YoutubeAdapter.YoutubeAdapterCallBack, SoundCloudAdapter.SCAdapterCallback{
+        implements YoutubeAdapter.YoutubeAdapterCallBack, SoundCloudAdapter.SCAdapterCallback, EXSearch.Callback{
     private static final String TAG = DetailsActivity.class.getCanonicalName();
     public static final String DATA = "uri";
 
     private CollapsingToolbarLayout mCollapsingToolbar;
     private ImageView mImgDetails;
     private LinearLayout mLinearTypeCategory, mLinearContentDetails, mLinearWrapDetails;
-    private TextView mTvRecommendedGraph;
+    private TextView mTvRecommendedGraph, mTvRunExploration;
     private ExpandableTextView mTvDescriptionDetails;
 
     private String mUri;
@@ -109,6 +111,13 @@ public class DetailsActivity extends AppCompatActivity
                 showWhyRecommended();
             }
         });
+        mTvRunExploration = (TextView) findViewById(R.id.tv_run_exploration);
+        mTvRunExploration.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                runExploration();
+            }
+        });
 
         mLinearWrapDetails.setOnTouchListener(new OnSwipeTouchListener(this){
             @Override
@@ -128,6 +137,20 @@ public class DetailsActivity extends AppCompatActivity
     private void showWhyRecommended(){
         Intent intent = new Intent(DetailsActivity.this, GraphActivity.class);
         intent.putExtra(GraphActivity.RECOMMENDEDURI, mUri);
+        startActivity(intent);
+    }
+
+    private void runExploration(){
+        List<Recommend> recommends = new ArrayList<>();
+        Recommend recommend = new Recommend("", mUri, "");
+        recommends.add(recommend);
+        new EXSearch(DetailsActivity.this, recommends, DetailsActivity.this);
+    }
+
+    @Override
+    public void showResultRecommend(String response) {
+        Intent intent = new Intent(DetailsActivity.this, RecommendActivity.class);
+        intent.putExtra(RecommendActivity.DATA, response);
         startActivity(intent);
     }
 

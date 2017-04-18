@@ -63,9 +63,7 @@ public class MainActivity extends AppCompatActivity
 
     private static final int LOOKUP_URI = 1;
     private static final int FACTED_SEARCH = 2;
-    private static final int SLIDING_WINDOW = 3;
     private static final int FACTED_SEARCH_ADVANCED = 4;
-    private static final int AUTO_SEARCH_CHANGE = 5;
 
     public EditText mEdtSearch;
     public ListView mListviewKS;
@@ -89,7 +87,7 @@ public class MainActivity extends AppCompatActivity
     public String keywordSearch = "";
     public Map<String, String> mapSearchOptions;
 
-    public int typeSearch;
+    public int typeSearch = LOOKUP_URI;
 
     private interface TypeSearchCallBack {
         void changeTypeSearch();
@@ -131,15 +129,12 @@ public class MainActivity extends AppCompatActivity
     private void setDefaultTypeSearch(){
         typeSearch = LOOKUP_URI;
         callBack.changeTypeSearch();
-        if(typeSearch == LOOKUP_URI){
-            listeningEdtSearch();
-        }
+        listeningEdtSearch();
     }
 
     private TypeSearchCallBack callBack = new TypeSearchCallBack() {
         @Override
         public void changeTypeSearch() {
-            resetSearch();
             switch (typeSearch){
                 case LOOKUP_URI:
                     mKeywordSearchs.clear();
@@ -156,8 +151,6 @@ public class MainActivity extends AppCompatActivity
                     mRecyclerFS.setVisibility(View.VISIBLE);
                     hideFSFilter();
                     break;
-                case SLIDING_WINDOW:
-                    break;
                 case FACTED_SEARCH_ADVANCED:
                     mFSResults.clear();
                     mFSAdapter.notifyDataSetChanged();
@@ -165,23 +158,11 @@ public class MainActivity extends AppCompatActivity
                     mRecyclerFS.setVisibility(View.VISIBLE);
                     hideFSFilter();
                     break;
-                case AUTO_SEARCH_CHANGE:
-                    mKeywordSearchs.clear();
-                    mKSAdapter.notifyDataSetChanged();
-                    mFSResults.clear();
-                    mFSAdapter.notifyDataSetChanged();
-                    mListviewKS.setVisibility(View.GONE);
-                    mRecyclerFS.setVisibility(View.GONE);
-                    hideFSFilter();
                 default:
                     break;
             }
         }
     };
-
-    private void resetSearch(){
-        mEdtSearch.setText("");
-    }
 
     private void hideSelectedRecommend(){
         mListviewKS.setVisibility(View.VISIBLE);
@@ -264,9 +245,9 @@ public class MainActivity extends AppCompatActivity
                 }
                 new EXSearch(MainActivity.this, mSelectedRecommends, MainActivity.this);
                 break;
-            case R.id.img_search_option:
-                showPopupSearchOption();
-                break;
+//            case R.id.img_search_option:
+//                showPopupSearchOption();
+//                break;
             case R.id.img_search:
                 String keyword = getKeywordInput();
                 String keywordRemovedStopWord = removeStopWord(keyword);
@@ -277,18 +258,8 @@ public class MainActivity extends AppCompatActivity
                             showLogAndToast("Search " + keywordSearch);
                             new FacetedSearch(MainActivity.this, keywordSearch, "", mFSResults, mFSAdapter, MainActivity.this);
                             break;
-                        case SLIDING_WINDOW:
-                            new SlidingWindow(MainActivity.this, keywordSearch);
-                            break;
                         case FACTED_SEARCH_ADVANCED:
                             new FacetedSearchAdvanced(MainActivity.this, keywordSearch, MainActivity.this);
-                            break;
-                        case AUTO_SEARCH_CHANGE:
-                            if(keywordSearch.split(" ").length <= 3){
-                                activeLookupUri();
-                            }else{
-                                activeFSAdvanced();
-                            }
                             break;
                     }
                 }
@@ -324,40 +295,8 @@ public class MainActivity extends AppCompatActivity
     public void FSCompleted() {
         showLogAndToast("Done!");
         if(mKeywordSearchs.size() == 0){
-            showLogAndToast("Size = 0");
             activeFSAdvanced();
         }
-    }
-
-    LookupUri.Callback lookupCallback = new LookupUri.Callback() {
-        @Override
-        public void showMessageKSNoResult(String message) {
-            showLogAndToast(message);
-        }
-
-        @Override
-        public void completedKS() {
-        }
-    };
-
-    private void activeLookupUri(){
-        mKeywordSearchs.clear();
-        mKSAdapter.notifyDataSetChanged();
-        mListviewKS.setVisibility(View.VISIBLE);
-        mRecyclerFS.setVisibility(View.GONE);
-        hideFSFilter();
-        new LookupUri(MainActivity.this, keywordSearch, new LookupUri.Callback() {
-            @Override
-            public void showMessageKSNoResult(String message) {
-                showLogAndToast("KS no results. Continue with Faceted search!");
-                activeFSAdvanced();
-            }
-
-            @Override
-            public void completedKS() {
-
-            }
-        });
     }
 
     private void activeFSAdvanced(){
@@ -829,49 +768,37 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    private void showPopupSearchOption(){
-        PopupMenu popupMenu = new PopupMenu(this, mImgSearchOption);
-        popupMenu.getMenuInflater().inflate(R.menu.menu_search_option, popupMenu.getMenu());
-        popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-            @Override
-            public boolean onMenuItemClick(MenuItem item) {
-                switch (item.getItemId()){
-                    case R.id.menu_lookup_uri:
-                        if(typeSearch != LOOKUP_URI){
-                            typeSearch = LOOKUP_URI;
-                            callBack.changeTypeSearch();
-                        }
-                        return true;
-                    case R.id.menu_faceted_search:
-                        if(typeSearch != FACTED_SEARCH){
-                            typeSearch = FACTED_SEARCH;
-                            callBack.changeTypeSearch();
-                        }
-                        return true;
-                    case R.id.menu_sliding_window:
-                        if(typeSearch != SLIDING_WINDOW){
-                            typeSearch = SLIDING_WINDOW;
-                            callBack.changeTypeSearch();
-                        }
-                        return true;
-                    case R.id.menu_faceted_search_advanced:
-                        if(typeSearch != FACTED_SEARCH_ADVANCED){
-                            typeSearch = FACTED_SEARCH_ADVANCED;
-                            callBack.changeTypeSearch();
-                        }
-                        return true;
-                    case R.id.menu_auto_search:
-                        if(typeSearch != AUTO_SEARCH_CHANGE){
-                            typeSearch = AUTO_SEARCH_CHANGE;
-                            callBack.changeTypeSearch();
-                        }
-                        return true;
-                }
-                return false;
-            }
-        });
-        popupMenu.show();
-    }
+//    private void showPopupSearchOption(){
+//        PopupMenu popupMenu = new PopupMenu(this, mImgSearchOption);
+//        popupMenu.getMenuInflater().inflate(R.menu.menu_search_option, popupMenu.getMenu());
+//        popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+//            @Override
+//            public boolean onMenuItemClick(MenuItem item) {
+//                switch (item.getItemId()){
+//                    case R.id.menu_lookup_uri:
+//                        if(typeSearch != LOOKUP_URI){
+//                            typeSearch = LOOKUP_URI;
+//                            callBack.changeTypeSearch();
+//                        }
+//                        return true;
+//                    case R.id.menu_faceted_search:
+//                        if(typeSearch != FACTED_SEARCH){
+//                            typeSearch = FACTED_SEARCH;
+//                            callBack.changeTypeSearch();
+//                        }
+//                        return true;
+//                    case R.id.menu_faceted_search_advanced:
+//                        if(typeSearch != FACTED_SEARCH_ADVANCED){
+//                            typeSearch = FACTED_SEARCH_ADVANCED;
+//                            callBack.changeTypeSearch();
+//                        }
+//                        return true;
+//                }
+//                return false;
+//            }
+//        });
+//        popupMenu.show();
+//    }
 
     private String getKeywordInput(){
         String keywords = mEdtSearch.getText().toString().trim();
@@ -919,16 +846,37 @@ public class MainActivity extends AppCompatActivity
 
             @Override
             public void afterTextChanged(final Editable editable) {
-                if(typeSearch == LOOKUP_URI){
-                    String keyword = String.valueOf(editable.toString().trim());
+                String keyword = String.valueOf(editable.toString().trim());
+                if(keyword.split(" ").length <= 2){
+                    if(typeSearch != LOOKUP_URI){
+                        typeSearch = LOOKUP_URI;
+                        callBack.changeTypeSearch();
+                    }
                     if(keyword.length() >= 3){
                         hideSelectedRecommend();
-                        new LookupUri(MainActivity.this, keyword, lookupCallback);
+                        new LookupUri(MainActivity.this, keyword, new LookupUri.Callback() {
+                            @Override
+                            public void showMessageKSNoResult(String message) {
+                                typeSearch = FACTED_SEARCH_ADVANCED;
+                                callBack.changeTypeSearch();
+                                new FacetedSearchAdvanced(MainActivity.this, keywordSearch, MainActivity.this);
+                            }
+
+                            @Override
+                            public void completedKS() {
+
+                            }
+                        });
                     }else{
                         clearLookupResult();
                         if(mSelectedRecommends.size() > 0){
                             showSelectedRecommend();
                         }
+                    }
+                }else{
+                    if(typeSearch != FACTED_SEARCH_ADVANCED){
+                        typeSearch = FACTED_SEARCH_ADVANCED;
+                        callBack.changeTypeSearch();
                     }
                 }
             }

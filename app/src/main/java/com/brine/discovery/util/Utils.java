@@ -21,7 +21,7 @@ public class Utils {
     public static String createUrlKeywordSearch(String queryString){
         String url = "";
         try {
-            url = Config.LOOKUP_DBPEDIA + "QueryClass=&MaxHits=30&QueryString=" + URLEncoder.encode(queryString, "UTF-8");
+            url = Config.LOOKUP_DBPEDIA + "QueryClass=&MaxHits=5&QueryString=" + URLEncoder.encode(queryString, "UTF-8");
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }

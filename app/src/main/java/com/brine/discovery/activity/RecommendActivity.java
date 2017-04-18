@@ -52,7 +52,7 @@ public class RecommendActivity extends AppCompatActivity implements EXSearch.Cal
         ViewPagerAdapter adapter = new ViewPagerAdapter(getSupportFragmentManager());
 
         String response = getIntent().getStringExtra(DATA);
-        adapter.addFrag(new RecommendFragment(), "TOP", response, true);
+//        adapter.addFrag(new RecommendFragment(), "TOP", response, false);
         try {
             JSONArray jsonArray = new JSONArray(response);
             for(int i = jsonArray.length() - 1; i >=0; i--){
@@ -110,7 +110,7 @@ public class RecommendActivity extends AppCompatActivity implements EXSearch.Cal
         void addFrag(Fragment fragment, String title, String data, boolean type) {
             Bundle bundle = new Bundle();
             bundle.putString(RecommendFragment.DATA, data);
-            bundle.putBoolean(RecommendFragment.TOP_TYPE, type);
+//            bundle.putBoolean(RecommendFragment.TOP_TYPE, type);
             fragment.setArguments(bundle);
             mFragmentList.add(fragment);
             mFragmentTitleList.add(title);

@@ -87,6 +87,15 @@
                         android:layout_marginBottom="4dp" />
 
                     <TextView
+                        android:id="@+id/tv_run_exploration"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="@android:style/TextAppearance.Material.Caption"
+                        android:background="@android:color/holo_blue_light"
+                        android:text="Run an exploration?"
+                        android:layout_marginBottom="4dp" />
+
+                    <TextView
                         android:id="@+id/tv_description_label"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
