@@ -239,4 +239,23 @@ public class DbpediaConstant {
         }
         return false;
     }
+
+    public static boolean isTopContext(String uriInput){
+        List<String> contextMusic = Arrays.asList(
+                "Mixed"
+        );
+        for(String uri : contextMusic){
+            if(uri.contains("http")){
+                String uriTemp = "http://dbpedia.org/resource/" + uri;
+                if(uriInput.toLowerCase().equals(uriTemp.toLowerCase())){
+                    return true;
+                }
+            }else{
+                if(uriInput.toLowerCase().equals(uri.toLowerCase())){
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 }

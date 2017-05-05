@@ -16,7 +16,7 @@
             android:layout_height="match_parent"
             android:paddingLeft="@dimen/_3sdp"
             android:paddingRight="@dimen/_3sdp"
-            android:src="@drawable/no_image_loading"/>
+            android:src="@drawable/not_available"/>
 
         <ProgressBar
             android:id="@+id/progress_loading"

@@ -14,7 +14,7 @@
             android:id="@+id/img_thumb"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:src="@drawable/no_image_loading"/>
+            android:src="@drawable/not_available"/>
 
         <ProgressBar
             android:id="@+id/progress_loading"

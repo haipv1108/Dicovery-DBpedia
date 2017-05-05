@@ -83,7 +83,7 @@ public class TopFragment extends Fragment implements GridViewAdapter.GridAdapter
                     final String image = results.getJSONObject(j).getString("image");
                     if(label.equals("null") || abtract.equals("null"))
                         continue;
-                    Recommend recommend = new Recommend(label, uri, image, threshold);
+                    Recommend recommend = new Recommend(label, abtract, uri, image, threshold);
                     insertRecommend(recommend);
                 }
             }

@@ -89,6 +89,9 @@ public class MainActivity extends AppCompatActivity
 
     public int typeSearch = LOOKUP_URI;
 
+    long startTime = 0;
+    long elapsedTime = 0;
+
     private interface TypeSearchCallBack {
         void changeTypeSearch();
     }
@@ -243,6 +246,7 @@ public class MainActivity extends AppCompatActivity
                     showLogAndToast("Please select uri!");
                     return;
                 }
+                startTime = System.currentTimeMillis();
                 new EXSearch(MainActivity.this, mSelectedRecommends, MainActivity.this);
                 break;
 //            case R.id.img_search_option:
@@ -281,6 +285,8 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void showResultRecommend(String response) {
+        elapsedTime = System.currentTimeMillis() - startTime;
+        showLogAndToast("Time request: " + elapsedTime/1000 + "s");
         Intent intent = new Intent(MainActivity.this, RecommendActivity.class);
         intent.putExtra(RecommendActivity.DATA, response);
         startActivity(intent);
@@ -761,7 +767,7 @@ public class MainActivity extends AppCompatActivity
     public void onClickFS(FSResult fsResult) {
         if(!isSelectedItem(fsResult.getUri())){
             Recommend recommend = new Recommend(
-                    fsResult.getLabel(), fsResult.getUri(), fsResult.getThumbnail());
+                    fsResult.getLabel(), fsResult.getDescription(), fsResult.getUri(), fsResult.getThumbnail());
             addSelectedRecommend(recommend);
         }else{
             showLogAndToast("Item added. Please choice other item!");
@@ -888,7 +894,7 @@ public class MainActivity extends AppCompatActivity
                 KeywordSearch keywordSearch = mKeywordSearchs.get(i);
                 if(!isSelectedItem(keywordSearch.getUri())){
                     Recommend recommend = new Recommend(
-                            keywordSearch.getLabel(), keywordSearch.getUri(), keywordSearch.getThumb());
+                            keywordSearch.getLabel(), keywordSearch.getDescription(),keywordSearch.getUri(), keywordSearch.getThumb());
 
                     addSelectedRecommend(recommend);
                     clearLookupResult();

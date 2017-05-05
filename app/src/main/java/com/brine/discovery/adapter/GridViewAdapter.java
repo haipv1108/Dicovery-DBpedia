@@ -13,6 +13,7 @@ import android.widget.TextView;
 
 import com.brine.discovery.R;
 import com.brine.discovery.model.Recommend;
+import com.ms.square.android.expandabletextview.ExpandableTextView;
 import com.squareup.picasso.Callback;
 import com.squareup.picasso.NetworkPolicy;
 import com.squareup.picasso.Picasso;
@@ -63,10 +64,11 @@ public class GridViewAdapter extends BaseAdapter {
         final GridViewAdapter.ViewHolder holder;
         if(view == null){
             view = mLayoutInflater.inflate(
-                    R.layout.recommend_item, null);
+                    R.layout.recommend_item_row, null);
             holder = new GridViewAdapter.ViewHolder();
             holder.tvUri = (TextView) view.findViewById(R.id.tv_uri);
             holder.tvLabel = (TextView) view.findViewById(R.id.tv_label);
+            holder.tvDescription = (ExpandableTextView) view.findViewById(R.id.tv_description);
             holder.image = (ImageView) view.findViewById(R.id.img_thumb);
             holder.tvOption = (TextView) view.findViewById(R.id.tv_option);
             holder.progressLoading = (ProgressBar) view.findViewById(R.id.progress_loading);
@@ -78,6 +80,7 @@ public class GridViewAdapter extends BaseAdapter {
         final Recommend recommend = mListData.get(i);
         holder.tvUri.setText(recommend.getUri());
         holder.tvLabel.setText(recommend.getLabel());
+        holder.tvDescription.setText(recommend.getDescription());
         holder.progressLoading.setVisibility(View.VISIBLE);
         Picasso.with(mContext)
                 .load(recommend.getImage())
@@ -128,6 +131,7 @@ public class GridViewAdapter extends BaseAdapter {
     static class ViewHolder{
         TextView tvUri;
         TextView tvLabel;
+        ExpandableTextView tvDescription;
         ImageView image;
         ProgressBar progressLoading;
         TextView tvOption;

@@ -67,7 +67,7 @@
             android:columnWidth="@dimen/_90sdp"
             android:gravity="center"
             android:horizontalSpacing="10dp"
-            android:numColumns="3"
+            android:numColumns="1"
             android:stretchMode="columnWidth"
             android:verticalSpacing="10dp" />
     </android.support.v4.widget.NestedScrollView>

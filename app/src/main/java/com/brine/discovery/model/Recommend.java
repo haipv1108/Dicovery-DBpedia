@@ -1,6 +1,5 @@
 package com.brine.discovery.model;
 
-import android.util.Log;
 
 /**
  * Created by phamhai on 09/02/2017.
@@ -8,12 +7,14 @@ import android.util.Log;
 
 public class Recommend {
     private String label;
+    private String description;
     private String uri;
     private String image;
     private float threshold;
 
-    public Recommend(String label, String uri, String image){
+    public Recommend(String label, String description, String uri, String image){
         this.label = label;
+        this.description = description;
         if(uri.contains("http")){
             this.uri = uri;
         }else{
@@ -26,8 +27,9 @@ public class Recommend {
         }
     }
 
-    public Recommend(String label, String uri, String image, float threshold){
+    public Recommend(String label, String description, String uri, String image, float threshold){
         this.label = label;
+        this.description = description;
         if(uri.contains("http")){
             this.uri = uri;
         }else{
@@ -43,6 +45,10 @@ public class Recommend {
 
     public String getLabel(){
         return label;
+    }
+
+    public String getDescription() {
+        return description;
     }
 
     public String getUri(){
