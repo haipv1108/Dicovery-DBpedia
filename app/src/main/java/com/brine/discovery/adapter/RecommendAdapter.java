@@ -1,11 +1,11 @@
 package com.brine.discovery.adapter;
 
 import android.content.Context;
+import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.ProgressBar;
@@ -15,7 +15,6 @@ import com.brine.discovery.R;
 import com.brine.discovery.model.Recommend;
 import com.ms.square.android.expandabletextview.ExpandableTextView;
 import com.squareup.picasso.Callback;
-import com.squareup.picasso.NetworkPolicy;
 import com.squareup.picasso.Picasso;
 
 import java.util.List;
@@ -24,18 +23,16 @@ import java.util.List;
  * Created by phamhai on 09/02/2017.
  */
 
-public class GridViewAdapter extends BaseAdapter {
+public class RecommendAdapter extends RecyclerView.Adapter<RecommendAdapter.ViewHolder> {
 
     private Context mContext;
     private List<Recommend> mListData;
-    private LayoutInflater mLayoutInflater;
     private GridAdapterCallback mCallback;
 
-    public GridViewAdapter(Context mContext, List<Recommend> mListData, GridAdapterCallback mCallback){
+    public RecommendAdapter(Context mContext, List<Recommend> mListData, GridAdapterCallback mCallback){
         this.mContext = mContext;
         this.mListData = mListData;
         this.mCallback = mCallback;
-        mLayoutInflater = LayoutInflater.from(mContext);
     }
 
     public interface GridAdapterCallback{
@@ -45,39 +42,15 @@ public class GridViewAdapter extends BaseAdapter {
     }
 
     @Override
-    public int getCount() {
-        return mListData.size();
+    public RecommendAdapter.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        View itemView = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.recommend_item_row, parent, false);
+        return new RecommendAdapter.ViewHolder(itemView);
     }
 
     @Override
-    public Object getItem(int i) {
-        return mListData.get(i);
-    }
-
-    @Override
-    public long getItemId(int i) {
-        return i;
-    }
-
-    @Override
-    public View getView(int i, View view, ViewGroup viewGroup) {
-        final GridViewAdapter.ViewHolder holder;
-        if(view == null){
-            view = mLayoutInflater.inflate(
-                    R.layout.recommend_item_row, null);
-            holder = new GridViewAdapter.ViewHolder();
-            holder.tvUri = (TextView) view.findViewById(R.id.tv_uri);
-            holder.tvLabel = (TextView) view.findViewById(R.id.tv_label);
-            holder.tvDescription = (ExpandableTextView) view.findViewById(R.id.tv_description);
-            holder.image = (ImageView) view.findViewById(R.id.img_thumb);
-            holder.tvOption = (TextView) view.findViewById(R.id.tv_option);
-            holder.progressLoading = (ProgressBar) view.findViewById(R.id.progress_loading);
-            view.setTag(holder);
-        }else {
-            holder = (GridViewAdapter.ViewHolder) view.getTag();
-        }
-
-        final Recommend recommend = mListData.get(i);
+    public void onBindViewHolder(final RecommendAdapter.ViewHolder holder, int position) {
+        final Recommend recommend = mListData.get(position);
         holder.tvUri.setText(recommend.getUri());
         holder.tvLabel.setText(recommend.getLabel());
         holder.tvDescription.setText(recommend.getDescription());
@@ -96,13 +69,37 @@ public class GridViewAdapter extends BaseAdapter {
                         holder.progressLoading.setVisibility(View.GONE);
                     }
                 });
-        view.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                showOptionMenu(holder.tvOption, recommend);
-            }
-        });
-        return view;
+    }
+
+    @Override
+    public int getItemCount() {
+        return mListData.size();
+    }
+
+    class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
+        TextView tvUri;
+        TextView tvLabel;
+        ExpandableTextView tvDescription;
+        ImageView image;
+        ProgressBar progressLoading;
+        TextView tvOption;
+
+        ViewHolder(View view){
+            super(view);
+            tvUri = (TextView) view.findViewById(R.id.tv_uri);
+            tvLabel = (TextView) view.findViewById(R.id.tv_label);
+            tvDescription = (ExpandableTextView) view.findViewById(R.id.tv_description);
+            image = (ImageView) view.findViewById(R.id.img_thumb);
+            tvOption = (TextView) view.findViewById(R.id.tv_option);
+            progressLoading = (ProgressBar) view.findViewById(R.id.progress_loading);
+            view.setOnClickListener(this);
+        }
+
+        @Override
+        public void onClick(View view) {
+            int position = getAdapterPosition();
+            showOptionMenu(view, mListData.get(position));
+        }
     }
 
     private void showOptionMenu(View view, final Recommend recommend){
@@ -126,14 +123,5 @@ public class GridViewAdapter extends BaseAdapter {
             }
         });
         popupMenu.show();
-    }
-
-    static class ViewHolder{
-        TextView tvUri;
-        TextView tvLabel;
-        ExpandableTextView tvDescription;
-        ImageView image;
-        ProgressBar progressLoading;
-        TextView tvOption;
     }
 }

@@ -14,7 +14,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.GridView;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
@@ -23,7 +22,7 @@ import android.widget.Toast;
 import com.brine.discovery.R;
 import com.brine.discovery.activity.DetailsActivity;
 import com.brine.discovery.activity.RecommendActivity;
-import com.brine.discovery.adapter.GridViewAdapter;
+import com.brine.discovery.adapter.RecommendAdapter;
 import com.brine.discovery.adapter.SelectedResultsAdapter;
 import com.brine.discovery.message.MessageObserver;
 import com.brine.discovery.message.MessageObserverManager;
@@ -46,7 +45,7 @@ import static com.brine.discovery.message.MessageObserverManager.DELETE_ITEM;
  * A simple {@link Fragment} subclass.
  */
 public class RecommendFragment extends Fragment
-        implements GridViewAdapter.GridAdapterCallback, View.OnClickListener,
+        implements RecommendAdapter.GridAdapterCallback, View.OnClickListener,
         SelectedResultsAdapter.SelectedAdapterCallback, MessageObserver{
     private final static String TAG = RecommendFragment.class.getCanonicalName();
     public final static String DATA = "data";
@@ -57,11 +56,11 @@ public class RecommendFragment extends Fragment
     private RelativeLayout mRltSelectedRecommend;
     private RecyclerView mRecycleRecommed;
     private ImageButton mBtnEXSearch;
-    private GridView mGridView;
+    private RecyclerView mRecycleView;
 
     private List<Recommend> mRecommendDatas;
     private List<Recommend> mSelectedRecommends;
-    private GridViewAdapter mGridAdapter;
+    private RecommendAdapter mAdapter;
     private SelectedResultsAdapter mRecommedAdapter;
     private String mResponse;
     private boolean mTopType;
@@ -117,15 +116,23 @@ public class RecommendFragment extends Fragment
     private void initUI(View view){
         mRltSelectedRecommend = (RelativeLayout) view.findViewById(R.id.rlt_seledted_recommend);
         mRecycleRecommed = (RecyclerView) view.findViewById(R.id.recycle_selected_uri);
-        mGridView = (GridView) view.findViewById(R.id.grid_view);
+        mRecycleView = (RecyclerView) view.findViewById(R.id.recycle_recommend);
         mBtnEXSearch = (ImageButton) view.findViewById(R.id.btn_EXSearch);
         mBtnEXSearch.setOnClickListener(this);
     }
 
     private void init(){
         mRecommendDatas = new ArrayList<>();
-        mGridAdapter = new GridViewAdapter(getContext(), mRecommendDatas, this);
-        mGridView.setAdapter(mGridAdapter);
+        mAdapter = new RecommendAdapter(getContext(), mRecommendDatas, this);
+        mRecycleView.setHasFixedSize(true);
+        RecyclerView.LayoutManager managerRecommend =
+                new LinearLayoutManager(getContext(),
+                        LinearLayoutManager.VERTICAL, false);
+        mRecycleView.setLayoutManager(managerRecommend);
+        mRecycleView.addItemDecoration(
+                new DividerItemDecoration(getContext(), LinearLayout.VERTICAL));
+        mRecycleView.setItemAnimator(new DefaultItemAnimator());
+        mRecycleView.setAdapter(mAdapter);
 
         mSelectedRecommends = new ArrayList<>();
         mRecommedAdapter = new SelectedResultsAdapter(getContext(), mSelectedRecommends, this);
@@ -253,7 +260,7 @@ public class RecommendFragment extends Fragment
         if(mRecommendDatas.size() > MAXTOPRESULT){
             mRecommendDatas.remove(mRecommendDatas.size() - 1);
         }
-        mGridAdapter.notifyDataSetChanged();
+        mAdapter.notifyDataSetChanged();
     }
 
     //========================Normal recommend================
@@ -279,7 +286,7 @@ public class RecommendFragment extends Fragment
 
     private void insertNormalRecommend(Recommend recommend){
         mRecommendDatas.add(recommend);
-        mGridAdapter.notifyDataSetChanged();
+        mAdapter.notifyDataSetChanged();
     }
 
     @Override
