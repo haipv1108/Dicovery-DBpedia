@@ -13,8 +13,8 @@ import android.widget.TextView;
 
 import com.brine.discovery.R;
 import com.brine.discovery.model.Recommend;
+import com.ms.square.android.expandabletextview.ExpandableTextView;
 import com.squareup.picasso.Callback;
-import com.squareup.picasso.NetworkPolicy;
 import com.squareup.picasso.Picasso;
 
 import java.util.List;
@@ -23,21 +23,22 @@ import java.util.List;
  * Created by phamhai on 09/02/2017.
  */
 
-public class GridViewAdapter extends BaseAdapter {
+public class RecommendAdapter extends BaseAdapter {
 
     private Context mContext;
     private List<Recommend> mListData;
     private LayoutInflater mLayoutInflater;
-    private GridAdapterCallback mCallback;
 
-    public GridViewAdapter(Context mContext, List<Recommend> mListData, GridAdapterCallback mCallback){
+    private RecommendAdapterCallback mCallback;
+
+    public RecommendAdapter(Context mContext, List<Recommend> mListData, RecommendAdapterCallback mCallback){
         this.mContext = mContext;
         this.mListData = mListData;
-        this.mCallback = mCallback;
         mLayoutInflater = LayoutInflater.from(mContext);
+        this.mCallback = mCallback;
     }
 
-    public interface GridAdapterCallback{
+    public interface RecommendAdapterCallback {
         void showDetails(Recommend recommend);
         void addSearch(Recommend recommend);
         void exSearch(Recommend recommend);
@@ -59,25 +60,27 @@ public class GridViewAdapter extends BaseAdapter {
     }
 
     @Override
-    public View getView(int i, View view, ViewGroup viewGroup) {
-        final GridViewAdapter.ViewHolder holder;
+    public View getView(final int i, View view, ViewGroup viewGroup) {
+        final RecommendAdapter.ViewHolder holder;
         if(view == null){
             view = mLayoutInflater.inflate(
-                    R.layout.recommend_item, null);
-            holder = new GridViewAdapter.ViewHolder();
+                    R.layout.recommend_item_row, null);
+            holder = new RecommendAdapter.ViewHolder();
             holder.tvUri = (TextView) view.findViewById(R.id.tv_uri);
             holder.tvLabel = (TextView) view.findViewById(R.id.tv_label);
+            holder.tvDescription = (ExpandableTextView) view.findViewById(R.id.tv_description);
             holder.image = (ImageView) view.findViewById(R.id.img_thumb);
             holder.tvOption = (TextView) view.findViewById(R.id.tv_option);
             holder.progressLoading = (ProgressBar) view.findViewById(R.id.progress_loading);
             view.setTag(holder);
         }else {
-            holder = (GridViewAdapter.ViewHolder) view.getTag();
+            holder = (RecommendAdapter.ViewHolder) view.getTag();
         }
 
-        final Recommend recommend = mListData.get(i);
+        Recommend recommend = mListData.get(i);
         holder.tvUri.setText(recommend.getUri());
         holder.tvLabel.setText(recommend.getLabel());
+        holder.tvDescription.setText(recommend.getDescription());
         holder.progressLoading.setVisibility(View.VISIBLE);
         Picasso.with(mContext)
                 .load(recommend.getImage())
@@ -96,7 +99,7 @@ public class GridViewAdapter extends BaseAdapter {
         view.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                showOptionMenu(holder.tvOption, recommend);
+                showOptionMenu(view, mListData.get(i));
             }
         });
         return view;
@@ -125,9 +128,10 @@ public class GridViewAdapter extends BaseAdapter {
         popupMenu.show();
     }
 
-    static class ViewHolder{
+    class ViewHolder{
         TextView tvUri;
         TextView tvLabel;
+        ExpandableTextView tvDescription;
         ImageView image;
         ProgressBar progressLoading;
         TextView tvOption;

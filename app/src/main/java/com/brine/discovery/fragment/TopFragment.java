@@ -5,29 +5,21 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.GridView;
-import android.widget.ImageView;
-import android.widget.Toast;
 
 import com.brine.discovery.R;
 import com.brine.discovery.activity.DetailsActivity;
-import com.brine.discovery.activity.RecommendActivity;
-import com.brine.discovery.adapter.GridViewAdapter;
+import com.brine.discovery.adapter.RecommendAdapter;
 import com.brine.discovery.model.Recommend;
 import com.brine.discovery.util.DbpediaConstant;
-import com.squareup.picasso.Callback;
-import com.squareup.picasso.Picasso;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -35,13 +27,13 @@ import java.util.List;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class TopFragment extends Fragment implements GridViewAdapter.GridAdapterCallback{
+public class TopFragment extends Fragment implements RecommendAdapter.RecommendAdapterCallback {
     private final static String TAG = TopFragment.class.getCanonicalName();
     private final static int MAXRESULT = 20;
     private GridView mGridView;
 
     private List<Recommend> mRecommendDatas;
-    private GridViewAdapter mGridAdapter;
+    private RecommendAdapter mGridAdapter;
     private String response;
 
     public TopFragment() {
@@ -60,9 +52,9 @@ public class TopFragment extends Fragment implements GridViewAdapter.GridAdapter
         super.onViewCreated(view, savedInstanceState);
         mGridView = (GridView) view.findViewById(R.id.grid_view);
 
-        mRecommendDatas = new ArrayList<>();
-        mGridAdapter = new GridViewAdapter(getContext(), mRecommendDatas, this);
-        mGridView.setAdapter(mGridAdapter);
+//        mRecommendDatas = new ArrayList<>();
+//        mGridAdapter = new RecommendAdapter(getContext(), mRecommendDatas, this);
+//        mGridView.setAdapter(mGridAdapter);
 
         parserResponseData();
     }
@@ -83,7 +75,7 @@ public class TopFragment extends Fragment implements GridViewAdapter.GridAdapter
                     final String image = results.getJSONObject(j).getString("image");
                     if(label.equals("null") || abtract.equals("null"))
                         continue;
-                    Recommend recommend = new Recommend(label, uri, image, threshold);
+                    Recommend recommend = new Recommend(label, abtract, uri, image, threshold);
                     insertRecommend(recommend);
                 }
             }

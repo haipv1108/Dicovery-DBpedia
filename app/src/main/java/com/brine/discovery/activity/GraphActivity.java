@@ -46,7 +46,7 @@ public class GraphActivity extends AppCompatActivity {
                 new JavaScriptInterface(this, fromUris, recommendedUri, mCoordinatorLayout),
                 "JSInterface");
 
-        mWebview.loadUrl("file:///android_asset/GraphSemantic/index.html");
+        mWebview.loadUrl("file:///android_asset/GraphGojs/index.html");
     }
 
     public class JavaScriptInterface{

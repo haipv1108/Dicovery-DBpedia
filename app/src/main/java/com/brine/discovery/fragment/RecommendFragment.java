@@ -14,16 +14,16 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.GridView;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.brine.discovery.R;
 import com.brine.discovery.activity.DetailsActivity;
 import com.brine.discovery.activity.RecommendActivity;
-import com.brine.discovery.adapter.GridViewAdapter;
+import com.brine.discovery.adapter.RecommendAdapter;
 import com.brine.discovery.adapter.SelectedResultsAdapter;
 import com.brine.discovery.message.MessageObserver;
 import com.brine.discovery.message.MessageObserverManager;
@@ -46,7 +46,7 @@ import static com.brine.discovery.message.MessageObserverManager.DELETE_ITEM;
  * A simple {@link Fragment} subclass.
  */
 public class RecommendFragment extends Fragment
-        implements GridViewAdapter.GridAdapterCallback, View.OnClickListener,
+        implements RecommendAdapter.RecommendAdapterCallback, View.OnClickListener,
         SelectedResultsAdapter.SelectedAdapterCallback, MessageObserver{
     private final static String TAG = RecommendFragment.class.getCanonicalName();
     public final static String DATA = "data";
@@ -57,11 +57,11 @@ public class RecommendFragment extends Fragment
     private RelativeLayout mRltSelectedRecommend;
     private RecyclerView mRecycleRecommed;
     private ImageButton mBtnEXSearch;
-    private GridView mGridView;
+    private ListView mLVRecommend;
 
     private List<Recommend> mRecommendDatas;
     private List<Recommend> mSelectedRecommends;
-    private GridViewAdapter mGridAdapter;
+    private RecommendAdapter mAdapter;
     private SelectedResultsAdapter mRecommedAdapter;
     private String mResponse;
     private boolean mTopType;
@@ -117,15 +117,16 @@ public class RecommendFragment extends Fragment
     private void initUI(View view){
         mRltSelectedRecommend = (RelativeLayout) view.findViewById(R.id.rlt_seledted_recommend);
         mRecycleRecommed = (RecyclerView) view.findViewById(R.id.recycle_selected_uri);
-        mGridView = (GridView) view.findViewById(R.id.grid_view);
+        mLVRecommend = (ListView) view.findViewById(R.id.mlv_recommend);
         mBtnEXSearch = (ImageButton) view.findViewById(R.id.btn_EXSearch);
         mBtnEXSearch.setOnClickListener(this);
     }
 
     private void init(){
         mRecommendDatas = new ArrayList<>();
-        mGridAdapter = new GridViewAdapter(getContext(), mRecommendDatas, this);
-        mGridView.setAdapter(mGridAdapter);
+        mAdapter = new RecommendAdapter(getContext(), mRecommendDatas, this);
+        mLVRecommend.setAdapter(mAdapter);
+        mLVRecommend.setNestedScrollingEnabled(true);
 
         mSelectedRecommends = new ArrayList<>();
         mRecommedAdapter = new SelectedResultsAdapter(getContext(), mSelectedRecommends, this);
@@ -189,27 +190,56 @@ public class RecommendFragment extends Fragment
 
     //======================TOP recommend=========================
     private void parserTopResponseData(){
-        try {
-            JSONArray jsonArray = new JSONArray(mResponse);
-            for(int i = 0; i < jsonArray.length(); i++){
-                JSONArray results = jsonArray.getJSONObject(i).getJSONArray("results");
-                String uriType = results.getJSONObject(i).getString("uri");
-                if(DbpediaConstant.isContext(uriType)) continue;
-                for(int j = 0; j < results.length(); j++){
-                    final float threshold = BigDecimal.valueOf(results.getJSONObject(i)
-                            .getDouble("value")).floatValue();
-                    final String label = results.getJSONObject(j).getString("label");
-                    String abtract = results.getJSONObject(j).getString("abstract");
-                    final String uri = results.getJSONObject(j).getString("uri");
-                    final String image = results.getJSONObject(j).getString("image");
-                    if(label.equals("null") || abtract.equals("null"))
-                        continue;
-                    Recommend recommend = new Recommend(label, uri, image, threshold);
-                    insertTopRecommend(recommend);
+        if(mResponse.contains("Mixed")){
+            showLog("TOP RECOMMEND: true" );
+            try {
+                JSONArray jsonArray = new JSONArray(mResponse);
+                for(int i = 0; i < jsonArray.length(); i++){
+                    JSONArray results = jsonArray.getJSONObject(i).getJSONArray("results");
+                    String uriType = jsonArray.getJSONObject(i).getString("uri");
+                    if(!DbpediaConstant.isTopContext(uriType)) {
+                        for(int j = 0; j < results.length(); j++){
+                            final float threshold = BigDecimal.valueOf(results.getJSONObject(i)
+                                    .getDouble("value")).floatValue();
+                            final String label = results.getJSONObject(j).getString("label");
+                            String abtract = results.getJSONObject(j).getString("abstract");
+                            final String uri = results.getJSONObject(j).getString("uri");
+                            final String image = results.getJSONObject(j).getString("image");
+                            if(label.equals("null") || abtract.equals("null"))
+                                continue;
+                            Recommend recommend = new Recommend(label, abtract, uri, image, threshold);
+                            insertTopRecommend(recommend);
+                        }
+                    }
                 }
+            } catch (JSONException e) {
+                e.printStackTrace();
             }
-        } catch (JSONException e) {
-            e.printStackTrace();
+        }else{
+            showLog("TOP RECOMMEND: false");
+            try {
+                JSONArray jsonArray = new JSONArray(mResponse);
+                for(int i = 0; i < jsonArray.length(); i++){
+                    JSONArray results = jsonArray.getJSONObject(i).getJSONArray("results");
+                    String uriType = jsonArray.getJSONObject(i).getString("uri");
+                    if(!DbpediaConstant.isContext(uriType)) {
+                        for(int j = 0; j < results.length(); j++){
+                            final float threshold = BigDecimal.valueOf(results.getJSONObject(i)
+                                    .getDouble("value")).floatValue();
+                            final String label = results.getJSONObject(j).getString("label");
+                            String abtract = results.getJSONObject(j).getString("abstract");
+                            final String uri = results.getJSONObject(j).getString("uri");
+                            final String image = results.getJSONObject(j).getString("image");
+                            if(label.equals("null") || abtract.equals("null"))
+                                continue;
+                            Recommend recommend = new Recommend(label, abtract, uri, image, threshold);
+                            insertTopRecommend(recommend);
+                        }
+                    }
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -224,7 +254,7 @@ public class RecommendFragment extends Fragment
         if(mRecommendDatas.size() > MAXTOPRESULT){
             mRecommendDatas.remove(mRecommendDatas.size() - 1);
         }
-        mGridAdapter.notifyDataSetChanged();
+        mAdapter.notifyDataSetChanged();
     }
 
     //========================Normal recommend================
@@ -235,11 +265,12 @@ public class RecommendFragment extends Fragment
             for(int i = 0; i < jsonArray.length(); i++){
                 String label = jsonArray.getJSONObject(i).getString("label");
                 String uri = jsonArray.getJSONObject(i).getString("uri");
+                String abtract = jsonArray.getJSONObject(i).getString("abstract");
                 String image = jsonArray.getJSONObject(i).getString("image");
                 if(label.equals("null")){
                     continue;
                 }
-                Recommend recommend = new Recommend(label, uri, image);
+                Recommend recommend = new Recommend(label, abtract, uri, image);
                 insertNormalRecommend(recommend);
             }
         } catch (JSONException e) {
@@ -249,7 +280,7 @@ public class RecommendFragment extends Fragment
 
     private void insertNormalRecommend(Recommend recommend){
         mRecommendDatas.add(recommend);
-        mGridAdapter.notifyDataSetChanged();
+        mAdapter.notifyDataSetChanged();
     }
 
     @Override

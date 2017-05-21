@@ -59,7 +59,7 @@ public class FacetedSearchAdvanced {
                     progressDialog.dismiss();
                 }
                 Map<String, Integer> entitiesMap = new HashMap<>();
-                List<String> splitKeyword = Arrays.asList(mKeywordSearch.split(" "));
+                List<String> splitKeyword = Arrays.asList(mKeywordSearch.replace("actor", "person").split(" "));
                 try {
                     JSONObject jsonObject = new JSONObject(response);
                     JSONArray data = jsonObject.getJSONObject("results").getJSONArray("bindings");

@@ -63,15 +63,11 @@ public class EXSearch {
         }
         showLog("Params: " + params.toString());
 
-        final long startTime = System.currentTimeMillis();
-
         client.post(Config.DISCOVERYHUB_RECOMMEND_URL, params, new AsyncHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
                 String response = new String(responseBody);
                 showLog(response);
-                long elapsedTime = System.currentTimeMillis() - startTime;
-                showLogAndToast("Time request: " + elapsedTime/1000 + "s");
                 parser(response);
             }
 

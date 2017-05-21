@@ -23,6 +23,7 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.PopupMenu;
 import android.widget.RelativeLayout;
+import android.widget.ScrollView;
 import android.widget.Toast;
 
 import com.android.volley.Request;
@@ -69,6 +70,7 @@ public class MainActivity extends AppCompatActivity
     public ListView mListviewKS;
     public RecyclerView mRecycleRecommed;
     public RelativeLayout mRltSelectedRecommend;
+    public ScrollView mScrollIntroduction;
 
     public LinearLayout mLinearFSFilter;
     public LinearLayout mFSFilterType, mFSFilterAttribute, mFSFilterValue, mFSFilterDistinct;
@@ -88,6 +90,9 @@ public class MainActivity extends AppCompatActivity
     public Map<String, String> mapSearchOptions;
 
     public int typeSearch = LOOKUP_URI;
+
+    long startTime = 0;
+    long elapsedTime = 0;
 
     private interface TypeSearchCallBack {
         void changeTypeSearch();
@@ -114,6 +119,7 @@ public class MainActivity extends AppCompatActivity
         mFSFilterAttribute = (LinearLayout) findViewById(R.id.fs_filter_attribute);
         mFSFilterValue = (LinearLayout) findViewById(R.id.fs_filter_value);
         mFSFilterDistinct = (LinearLayout) findViewById(R.id.fs_filter_distinct);
+        mScrollIntroduction = (ScrollView) findViewById(R.id.introduction);
 
         mRecyclerFS = (RecyclerView)findViewById(R.id.recycle_fsresult);
         mImgSearchOption = (ImageView) findViewById(R.id.img_search_option);
@@ -243,11 +249,9 @@ public class MainActivity extends AppCompatActivity
                     showLogAndToast("Please select uri!");
                     return;
                 }
+                startTime = System.currentTimeMillis();
                 new EXSearch(MainActivity.this, mSelectedRecommends, MainActivity.this);
                 break;
-//            case R.id.img_search_option:
-//                showPopupSearchOption();
-//                break;
             case R.id.img_search:
                 String keyword = getKeywordInput();
                 String keywordRemovedStopWord = removeStopWord(keyword);
@@ -281,6 +285,8 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void showResultRecommend(String response) {
+        elapsedTime = System.currentTimeMillis() - startTime;
+        showLogAndToast("Time request: " + elapsedTime/1000 + "s");
         Intent intent = new Intent(MainActivity.this, RecommendActivity.class);
         intent.putExtra(RecommendActivity.DATA, response);
         startActivity(intent);
@@ -761,44 +767,12 @@ public class MainActivity extends AppCompatActivity
     public void onClickFS(FSResult fsResult) {
         if(!isSelectedItem(fsResult.getUri())){
             Recommend recommend = new Recommend(
-                    fsResult.getLabel(), fsResult.getUri(), fsResult.getThumbnail());
+                    fsResult.getLabel(), fsResult.getDescription(), fsResult.getUri(), fsResult.getThumbnail());
             addSelectedRecommend(recommend);
         }else{
             showLogAndToast("Item added. Please choice other item!");
         }
     }
-
-//    private void showPopupSearchOption(){
-//        PopupMenu popupMenu = new PopupMenu(this, mImgSearchOption);
-//        popupMenu.getMenuInflater().inflate(R.menu.menu_search_option, popupMenu.getMenu());
-//        popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-//            @Override
-//            public boolean onMenuItemClick(MenuItem item) {
-//                switch (item.getItemId()){
-//                    case R.id.menu_lookup_uri:
-//                        if(typeSearch != LOOKUP_URI){
-//                            typeSearch = LOOKUP_URI;
-//                            callBack.changeTypeSearch();
-//                        }
-//                        return true;
-//                    case R.id.menu_faceted_search:
-//                        if(typeSearch != FACTED_SEARCH){
-//                            typeSearch = FACTED_SEARCH;
-//                            callBack.changeTypeSearch();
-//                        }
-//                        return true;
-//                    case R.id.menu_faceted_search_advanced:
-//                        if(typeSearch != FACTED_SEARCH_ADVANCED){
-//                            typeSearch = FACTED_SEARCH_ADVANCED;
-//                            callBack.changeTypeSearch();
-//                        }
-//                        return true;
-//                }
-//                return false;
-//            }
-//        });
-//        popupMenu.show();
-//    }
 
     private String getKeywordInput(){
         String keywords = mEdtSearch.getText().toString().trim();
@@ -838,6 +812,7 @@ public class MainActivity extends AppCompatActivity
         mEdtSearch.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                mScrollIntroduction.setVisibility(View.GONE);
             }
 
             @Override
@@ -888,7 +863,7 @@ public class MainActivity extends AppCompatActivity
                 KeywordSearch keywordSearch = mKeywordSearchs.get(i);
                 if(!isSelectedItem(keywordSearch.getUri())){
                     Recommend recommend = new Recommend(
-                            keywordSearch.getLabel(), keywordSearch.getUri(), keywordSearch.getThumb());
+                            keywordSearch.getLabel(), keywordSearch.getDescription(),keywordSearch.getUri(), keywordSearch.getThumb());
 
                     addSelectedRecommend(recommend);
                     clearLookupResult();

@@ -1,6 +1,7 @@
 package com.brine.discovery.activity;
 
 import android.app.ProgressDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -9,8 +10,7 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.support.design.widget.CollapsingToolbarLayout;
-import android.support.design.widget.CoordinatorLayout;
-import android.support.v4.widget.NestedScrollView;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.DefaultItemAnimator;
@@ -25,8 +25,11 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Request;
 import com.android.volley.Response;
+import com.android.volley.RetryPolicy;
+import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.brine.discovery.AppController;
@@ -54,8 +57,10 @@ import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static android.R.style.TextAppearance_Material_Body1;
 import static android.R.style.TextAppearance_Material_Body2;
@@ -72,6 +77,7 @@ public class DetailsActivity extends AppCompatActivity
     private ExpandableTextView mTvDescriptionDetails;
 
     private String mUri;
+    private String message = "";
 
     private int countRequestCompleted = 0;
     private int maxRequest = 0;
@@ -135,6 +141,104 @@ public class DetailsActivity extends AppCompatActivity
     }
 
     private void showWhyRecommended(){
+        if(!message.isEmpty()){
+            showDialogRelative(message);
+            return;
+        }
+        List<String> originUris = AppController.getInstance().getFromUriDecovery();
+        String currentUri = mUri;
+        for(String originUri : originUris){
+            String url = Utils.createUrlGetRelative(originUri, currentUri);
+            final ProgressDialog progressDialog = new ProgressDialog(DetailsActivity.this);
+            progressDialog.setMessage("Loading...");
+            progressDialog.show();
+            StringRequest request = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
+                @Override
+                public void onResponse(String response) {
+                    try {
+                        JSONObject jsonObject = new JSONObject(response);
+
+                        JSONArray jsonArray = jsonObject.getJSONObject("results").getJSONArray("bindings");
+                        if(jsonArray.length() == 0) {
+                            showLog("no result");
+                            showGraphSearch();
+                        }
+                        JSONObject object = jsonArray.getJSONObject(0);
+                        String label1 = object.getJSONObject("label1").getString("value");
+                        String label2 = object.getJSONObject("label2").getString("value");
+
+                        Map<String, List<String>> relativeEntities = new HashMap<>();
+                        for(int i = 0; i < jsonArray.length(); i++){
+                            JSONObject element = jsonArray.getJSONObject(i);
+                            String k = element.getJSONObject("k").getString("value");
+                            String catlabel = element.getJSONObject("catlabel").getString("value");
+                            boolean isAdded = false;
+                            for(Map.Entry<String, List<String>> entry : relativeEntities.entrySet()){
+                                if(entry.getKey().equals(k)){
+                                    entry.getValue().add(catlabel);
+                                    isAdded = true;
+                                }
+                            }
+                            if(!isAdded){
+                                List<String> listValues = new ArrayList<>();
+                                listValues.add(catlabel);
+                                relativeEntities.put(k, listValues);
+                            }
+
+                        }
+                        message = "\"" + label1 + "\"" + " and " + "\"" + label2 + "\"" + " have same \n";
+                        for(Map.Entry<String, List<String>> entry : relativeEntities.entrySet()){
+                            List<String> keySplit = Arrays.asList(entry.getKey().split("/"));
+                            String key = keySplit.get(keySplit.size() -1);
+                            if(!message.contains(":")){
+                                message += key + ": ";
+                            }else {
+                                message += "and \n" + key + ": ";
+                            }
+                            List<String> listValues = entry.getValue();
+                            for(int m = 0; m < listValues.size(); m++){
+                                String cate = listValues.get(m);
+                                message += cate + ", ";
+                            }
+                        }
+                        message += "..." ;
+                        progressDialog.dismiss();
+                        showDialogRelative(message);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }, new Response.ErrorListener() {
+                @Override
+                public void onErrorResponse(VolleyError volleyError) {
+                    if (volleyError.networkResponse == null) {
+                        if (volleyError.getClass().equals(TimeoutError.class)) {
+                            progressDialog.dismiss();
+                            showGraphSearch();
+                        }
+                    }
+                }
+            });
+
+            int socketTimeout = 4000;
+            RetryPolicy policy = new DefaultRetryPolicy(socketTimeout, DefaultRetryPolicy.DEFAULT_MAX_RETRIES, DefaultRetryPolicy.DEFAULT_BACKOFF_MULT);
+            request.setRetryPolicy(policy);
+            AppController.getInstance().addToRequestQueue(request, "relative");
+        }
+    }
+
+    private void showDialogRelative(String message){
+        new AlertDialog.Builder(this)
+                .setMessage(message)
+                .setPositiveButton("View graph relative", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        showGraphSearch();
+                    }
+                })
+                .show();
+    }
+
+    private void showGraphSearch(){
         Intent intent = new Intent(DetailsActivity.this, GraphActivity.class);
         intent.putExtra(GraphActivity.RECOMMENDEDURI, mUri);
         startActivity(intent);
@@ -142,7 +246,8 @@ public class DetailsActivity extends AppCompatActivity
 
     private void runExploration(){
         List<Recommend> recommends = new ArrayList<>();
-        Recommend recommend = new Recommend("", mUri, "");
+        Recommend recommend = new Recommend(mCollapsingToolbar.getTitle().toString(),
+                mTvDescriptionDetails.getText().toString(), mUri, "");
         recommends.add(recommend);
         new EXSearch(DetailsActivity.this, recommends, DetailsActivity.this);
     }
@@ -220,7 +325,6 @@ public class DetailsActivity extends AppCompatActivity
                         callBack.requestCompleted();
                         try {
                             JSONObject jsonObject = new JSONObject(response);
-
                             JSONArray jsonArray = jsonObject.getJSONObject("results")
                                     .getJSONArray("bindings");
                             if(jsonArray.length() == 0) {

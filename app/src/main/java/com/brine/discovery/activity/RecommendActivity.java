@@ -9,6 +9,7 @@ import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.brine.discovery.R;
 import com.brine.discovery.fragment.RecommendFragment;
@@ -29,6 +30,9 @@ public class RecommendActivity extends AppCompatActivity implements EXSearch.Cal
     private final static String TAG = RecommendActivity.class.getCanonicalName();
     public final static String DATA = "response";
     public final static float THRESHOLD = 0.0f;
+
+    long startTime = 0;
+    long elapsedTime = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,7 +56,7 @@ public class RecommendActivity extends AppCompatActivity implements EXSearch.Cal
         ViewPagerAdapter adapter = new ViewPagerAdapter(getSupportFragmentManager());
 
         String response = getIntent().getStringExtra(DATA);
-//        adapter.addFrag(new RecommendFragment(), "TOP", response, false);
+        adapter.addFrag(new RecommendFragment(), "TOP", response, true);
         try {
             JSONArray jsonArray = new JSONArray(response);
             for(int i = jsonArray.length() - 1; i >=0; i--){
@@ -110,7 +114,7 @@ public class RecommendActivity extends AppCompatActivity implements EXSearch.Cal
         void addFrag(Fragment fragment, String title, String data, boolean type) {
             Bundle bundle = new Bundle();
             bundle.putString(RecommendFragment.DATA, data);
-//            bundle.putBoolean(RecommendFragment.TOP_TYPE, type);
+            bundle.putBoolean(RecommendFragment.TOP_TYPE, type);
             fragment.setArguments(bundle);
             mFragmentList.add(fragment);
             mFragmentTitleList.add(title);
@@ -124,6 +128,8 @@ public class RecommendActivity extends AppCompatActivity implements EXSearch.Cal
 
     @Override
     public void showResultRecommend(String response) {
+        elapsedTime = System.currentTimeMillis() - startTime;
+        showLogAndToast("Time request: " + elapsedTime/1000 + "s");
         MessageObserverManager.getInstance().removeAllData();
         Intent intent = getIntent();
         intent.putExtra(DATA, response);
@@ -131,6 +137,7 @@ public class RecommendActivity extends AppCompatActivity implements EXSearch.Cal
     }
 
     public void exSearch(final List<Recommend> recommends) {
+        startTime = System.currentTimeMillis();
         new EXSearch(RecommendActivity.this, recommends, RecommendActivity.this);
     }
 
@@ -138,5 +145,15 @@ public class RecommendActivity extends AppCompatActivity implements EXSearch.Cal
         if(message != null){
             Log.d(TAG, message);
         }
+    }
+
+    private void showLogAndToast(final String message){
+        showLog(message);
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }

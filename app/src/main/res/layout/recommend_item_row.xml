@@ -44,49 +44,65 @@
                     android:layout_centerVertical="true"/>
             </RelativeLayout>
 
-            <LinearLayout
+            <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingLeft="@dimen/_2sdp"
-                android:orientation="vertical">
+                android:padding="@dimen/_3sdp">
 
                 <TextView
-                    android:id="@+id/tv_uri"
-                    android:layout_width="match_parent"
+                    android:id="@+id/tv_option"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:visibility="gone"/>
+                    android:layout_alignParentRight="true"
+                    android:layout_alignParentBottom="true"
+                    android:text="@string/tv_option"
+                    android:textStyle="bold"/>
 
-                <TextView
-                    android:id="@+id/tv_label"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:lines="1"
-                    android:textAppearance="@android:style/TextAppearance.Material.Title" />
-
-                <com.ms.square.android.expandabletextview.ExpandableTextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:id="@+id/tv_description"
-                    android:padding="@dimen/_3sdp"
-                    expandableTextView:maxCollapsedLines="3"
-                    expandableTextView:animDuration="200">
+                    android:orientation="vertical">
 
                     <TextView
-                        android:id="@+id/expandable_text"
-                        android:layout_width="wrap_content"
+                        android:id="@+id/tv_uri"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        tools:text="@string/detail_desc" />
+                        android:visibility="gone"/>
 
-                    <ImageButton
-                        android:id="@id/expand_collapse"
-                        android:layout_width="wrap_content"
+                    <TextView
+                        android:id="@+id/tv_label"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:padding="16dp"
-                        android:layout_gravity="right|bottom"
-                        android:background="@android:color/transparent"/>
+                        android:maxLines="2"
+                        android:textAppearance="@android:style/TextAppearance.Material.Body2"
+                        android:textSize="18sp"/>
 
-                </com.ms.square.android.expandabletextview.ExpandableTextView>
-            </LinearLayout>
+                    <com.ms.square.android.expandabletextview.ExpandableTextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:id="@+id/tv_description"
+                        android:padding="@dimen/_3sdp"
+                        expandableTextView:maxCollapsedLines="3"
+                        expandableTextView:animDuration="200">
+
+                        <TextView
+                            android:id="@+id/expandable_text"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            tools:text="@string/detail_desc" />
+
+                        <ImageButton
+                            android:id="@id/expand_collapse"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:padding="16dp"
+                            android:layout_gravity="right|bottom"
+                            android:background="@android:color/transparent"/>
+
+                    </com.ms.square.android.expandabletextview.ExpandableTextView>
+                </LinearLayout>
+            </RelativeLayout>
+
         </LinearLayout>
 
     </android.support.v7.widget.CardView>

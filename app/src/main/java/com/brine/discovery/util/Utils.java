@@ -535,11 +535,11 @@ public class Utils {
         return queryString;
     }
 
-    public static String createUrlGetRelative(String fromUri, String currentUri){
-        String query = createQueryGetRelative(fromUri, currentUri);
+    public static String createUrlGetRelative(String originUri, String currentUri){
+        String query = createQueryGetRelative(originUri, currentUri);
         String url = "";
         try {
-            url = "http://dbpedia-test.inria.fr/sparql?format=json&query=" + URLEncoder.encode(query, "UTF-8");
+            url = "http://dbpedia-test.inria.fr/sparql?default-graph-uri=&query=" + URLEncoder.encode(query, "UTF-8") + "&format=application%2Fsparql-results%2Bjson&timeout=5000&debug=on";
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -547,15 +547,15 @@ public class Utils {
         return url;
     }
 
-    private static String createQueryGetRelative(String fromUri, String currentUri){
+    private static String createQueryGetRelative(String originUri, String currentUri){
         String query = "SELECT ?label1 ?label2 ?k ?catlabel (count(?i) as ?count)\n" +
                 "WHERE\n" +
                 "{\n" +
                 "<" + currentUri + "> ?k ?cat .\n" +
-                "<" + fromUri + "> ?k ?cat .\n" +
+                "<" + originUri + "> ?k ?cat .\n" +
                 "?i ?u ?cat .\n" +
                 "<" + currentUri + "> rdfs:label ?label1 .\n" +
-                "<" + fromUri + "> rdfs:label ?label2 .\n" +
+                "<" + originUri + "> rdfs:label ?label2 .\n" +
                 "\n" +
                 "{\n" +
                 "?cat <http://www.w3.org/2004/02/skos/core#prefLabel> ?catlabel\n" +
@@ -568,6 +568,7 @@ public class Utils {
                 "\n" +
                 "FILTER ( ?k!=<http://dbpedia.org/ontology/wikiPageWikiLink> && ?k !=rdf:type && ?k!=<http://dbpedia.org/property/wikiPageUsesTemplate> && ?k!=<http://dbpedia.org/property/language> && lang(?label1) = \"en\" && lang(?label2) = \"en\" )\n" +
                 "}";
+        showLog("Relative: \n" + query);
         return query;
     }
 
