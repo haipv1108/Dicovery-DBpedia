@@ -16,6 +16,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
@@ -45,7 +46,7 @@ import static com.brine.discovery.message.MessageObserverManager.DELETE_ITEM;
  * A simple {@link Fragment} subclass.
  */
 public class RecommendFragment extends Fragment
-        implements RecommendAdapter.GridAdapterCallback, View.OnClickListener,
+        implements RecommendAdapter.RecommendAdapterCallback, View.OnClickListener,
         SelectedResultsAdapter.SelectedAdapterCallback, MessageObserver{
     private final static String TAG = RecommendFragment.class.getCanonicalName();
     public final static String DATA = "data";
@@ -56,7 +57,7 @@ public class RecommendFragment extends Fragment
     private RelativeLayout mRltSelectedRecommend;
     private RecyclerView mRecycleRecommed;
     private ImageButton mBtnEXSearch;
-    private RecyclerView mRecycleView;
+    private ListView mLVRecommend;
 
     private List<Recommend> mRecommendDatas;
     private List<Recommend> mSelectedRecommends;
@@ -116,7 +117,7 @@ public class RecommendFragment extends Fragment
     private void initUI(View view){
         mRltSelectedRecommend = (RelativeLayout) view.findViewById(R.id.rlt_seledted_recommend);
         mRecycleRecommed = (RecyclerView) view.findViewById(R.id.recycle_selected_uri);
-        mRecycleView = (RecyclerView) view.findViewById(R.id.recycle_recommend);
+        mLVRecommend = (ListView) view.findViewById(R.id.mlv_recommend);
         mBtnEXSearch = (ImageButton) view.findViewById(R.id.btn_EXSearch);
         mBtnEXSearch.setOnClickListener(this);
     }
@@ -124,15 +125,8 @@ public class RecommendFragment extends Fragment
     private void init(){
         mRecommendDatas = new ArrayList<>();
         mAdapter = new RecommendAdapter(getContext(), mRecommendDatas, this);
-        mRecycleView.setHasFixedSize(true);
-        RecyclerView.LayoutManager managerRecommend =
-                new LinearLayoutManager(getContext(),
-                        LinearLayoutManager.VERTICAL, false);
-        mRecycleView.setLayoutManager(managerRecommend);
-        mRecycleView.addItemDecoration(
-                new DividerItemDecoration(getContext(), LinearLayout.VERTICAL));
-        mRecycleView.setItemAnimator(new DefaultItemAnimator());
-        mRecycleView.setAdapter(mAdapter);
+        mLVRecommend.setAdapter(mAdapter);
+        mLVRecommend.setNestedScrollingEnabled(true);
 
         mSelectedRecommends = new ArrayList<>();
         mRecommedAdapter = new SelectedResultsAdapter(getContext(), mSelectedRecommends, this);

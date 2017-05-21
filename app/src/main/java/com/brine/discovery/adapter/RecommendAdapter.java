@@ -1,11 +1,11 @@
 package com.brine.discovery.adapter;
 
 import android.content.Context;
-import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.ProgressBar;
@@ -23,34 +23,61 @@ import java.util.List;
  * Created by phamhai on 09/02/2017.
  */
 
-public class RecommendAdapter extends RecyclerView.Adapter<RecommendAdapter.ViewHolder> {
+public class RecommendAdapter extends BaseAdapter {
 
     private Context mContext;
     private List<Recommend> mListData;
-    private GridAdapterCallback mCallback;
+    private LayoutInflater mLayoutInflater;
 
-    public RecommendAdapter(Context mContext, List<Recommend> mListData, GridAdapterCallback mCallback){
+    private RecommendAdapterCallback mCallback;
+
+    public RecommendAdapter(Context mContext, List<Recommend> mListData, RecommendAdapterCallback mCallback){
         this.mContext = mContext;
         this.mListData = mListData;
+        mLayoutInflater = LayoutInflater.from(mContext);
         this.mCallback = mCallback;
     }
 
-    public interface GridAdapterCallback{
+    public interface RecommendAdapterCallback {
         void showDetails(Recommend recommend);
         void addSearch(Recommend recommend);
         void exSearch(Recommend recommend);
     }
 
     @Override
-    public RecommendAdapter.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View itemView = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.recommend_item_row, parent, false);
-        return new RecommendAdapter.ViewHolder(itemView);
+    public int getCount() {
+        return mListData.size();
     }
 
     @Override
-    public void onBindViewHolder(final RecommendAdapter.ViewHolder holder, int position) {
-        final Recommend recommend = mListData.get(position);
+    public Object getItem(int i) {
+        return mListData.get(i);
+    }
+
+    @Override
+    public long getItemId(int i) {
+        return i;
+    }
+
+    @Override
+    public View getView(final int i, View view, ViewGroup viewGroup) {
+        final RecommendAdapter.ViewHolder holder;
+        if(view == null){
+            view = mLayoutInflater.inflate(
+                    R.layout.recommend_item_row, null);
+            holder = new RecommendAdapter.ViewHolder();
+            holder.tvUri = (TextView) view.findViewById(R.id.tv_uri);
+            holder.tvLabel = (TextView) view.findViewById(R.id.tv_label);
+            holder.tvDescription = (ExpandableTextView) view.findViewById(R.id.tv_description);
+            holder.image = (ImageView) view.findViewById(R.id.img_thumb);
+            holder.tvOption = (TextView) view.findViewById(R.id.tv_option);
+            holder.progressLoading = (ProgressBar) view.findViewById(R.id.progress_loading);
+            view.setTag(holder);
+        }else {
+            holder = (RecommendAdapter.ViewHolder) view.getTag();
+        }
+
+        Recommend recommend = mListData.get(i);
         holder.tvUri.setText(recommend.getUri());
         holder.tvLabel.setText(recommend.getLabel());
         holder.tvDescription.setText(recommend.getDescription());
@@ -69,37 +96,13 @@ public class RecommendAdapter extends RecyclerView.Adapter<RecommendAdapter.View
                         holder.progressLoading.setVisibility(View.GONE);
                     }
                 });
-    }
-
-    @Override
-    public int getItemCount() {
-        return mListData.size();
-    }
-
-    class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
-        TextView tvUri;
-        TextView tvLabel;
-        ExpandableTextView tvDescription;
-        ImageView image;
-        ProgressBar progressLoading;
-        TextView tvOption;
-
-        ViewHolder(View view){
-            super(view);
-            tvUri = (TextView) view.findViewById(R.id.tv_uri);
-            tvLabel = (TextView) view.findViewById(R.id.tv_label);
-            tvDescription = (ExpandableTextView) view.findViewById(R.id.tv_description);
-            image = (ImageView) view.findViewById(R.id.img_thumb);
-            tvOption = (TextView) view.findViewById(R.id.tv_option);
-            progressLoading = (ProgressBar) view.findViewById(R.id.progress_loading);
-            view.setOnClickListener(this);
-        }
-
-        @Override
-        public void onClick(View view) {
-            int position = getAdapterPosition();
-            showOptionMenu(view, mListData.get(position));
-        }
+        view.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                showOptionMenu(view, mListData.get(i));
+            }
+        });
+        return view;
     }
 
     private void showOptionMenu(View view, final Recommend recommend){
@@ -123,5 +126,14 @@ public class RecommendAdapter extends RecyclerView.Adapter<RecommendAdapter.View
             }
         });
         popupMenu.show();
+    }
+
+    class ViewHolder{
+        TextView tvUri;
+        TextView tvLabel;
+        ExpandableTextView tvDescription;
+        ImageView image;
+        ProgressBar progressLoading;
+        TextView tvOption;
     }
 }

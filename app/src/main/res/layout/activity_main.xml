@@ -39,7 +39,7 @@
             android:inputType="text"
             android:imeOptions="actionDone"
             android:textAppearance="@android:style/TextAppearance.Material.Body1"
-            android:hint="Search text"/>
+            android:hint="Enter text here..."/>
 
         <ImageView
             android:id="@+id/img_search"
@@ -174,4 +174,6 @@
         android:paddingLeft="@dimen/_5sdp"
         android:paddingRight="@dimen/_5sdp" />
 
+    <include
+        layout="@layout/introduction" />
 </LinearLayout>

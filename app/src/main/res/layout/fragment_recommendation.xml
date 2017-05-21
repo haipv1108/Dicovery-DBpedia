@@ -71,11 +71,19 @@
             <!--android:stretchMode="columnWidth"-->
             <!--android:verticalSpacing="10dp" />-->
 
-        <android.support.v7.widget.RecyclerView
-            android:id="@+id/recycle_recommend"
+        <!--<android.support.v7.widget.RecyclerView-->
+            <!--android:id="@+id/recycle_recommend"-->
+            <!--android:layout_width="match_parent"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--android:paddingLeft="@dimen/_5sdp"-->
+            <!--android:paddingRight="@dimen/_5sdp" />-->
+        <ListView
+            android:id="@+id/mlv_recommend"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:scrollbars="vertical"
             android:paddingLeft="@dimen/_5sdp"
-            android:paddingRight="@dimen/_5sdp" />
+            android:paddingRight="@dimen/_5sdp"/>
+
     </android.support.v4.widget.NestedScrollView>
 </android.support.design.widget.CoordinatorLayout>

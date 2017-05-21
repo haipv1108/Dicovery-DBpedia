@@ -26,4 +26,10 @@
     <string name="fs_filter_distinct">Distinct</string>
     <string name="fs_search_advanced">FS advanced</string>
     <string name="search_auto">Auto change search</string>
+    <string name="introduction_ex_description">The exploratory search is a new way to search the web, not to find what you are searching, but to find what you are not searching, and might be intersting for you !</string>
+    <string name="introduction_ex">Exploratory search</string>
+    <string name="introduction_interest">Get recommendations on your interests</string>
+    <string name="introduction_interest_description">Want a film recommendation related to writers you like? Interested by more complex and composite recommendations based on your deepest interests.</string>
+    <string name="introduction_recommend">Understand a recommendation</string>
+    <string name="introduction_recommend_description">System gives you recommendations, but also tools to understand why you have these recommendations, because we know that the more important in a recommendation is to know why you get it !</string>
 </resources>

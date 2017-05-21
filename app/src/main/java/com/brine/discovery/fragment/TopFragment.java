@@ -20,7 +20,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -28,7 +27,7 @@ import java.util.List;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class TopFragment extends Fragment implements RecommendAdapter.GridAdapterCallback{
+public class TopFragment extends Fragment implements RecommendAdapter.RecommendAdapterCallback {
     private final static String TAG = TopFragment.class.getCanonicalName();
     private final static int MAXRESULT = 20;
     private GridView mGridView;
