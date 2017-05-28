@@ -28,7 +28,7 @@ public class SoundCloudAdapter extends RecyclerView.Adapter<SoundCloudAdapter.Vi
     private SCAdapterCallback mCallback;
 
     public interface SCAdapterCallback {
-        void playSoundCloudMusic(String streamUrl);
+        void playSoundCloudMusic(String streamUrl, String songName);
     }
 
     @Override
@@ -93,7 +93,7 @@ public class SoundCloudAdapter extends RecyclerView.Adapter<SoundCloudAdapter.Vi
         @Override
         public void onClick(View view) {
             int position = getAdapterPosition();
-            mCallback.playSoundCloudMusic(mListData.get(position).getStreamUrl());
+            mCallback.playSoundCloudMusic(mListData.get(position).getStreamUrl(), mListData.get(position).getTitle());
         }
     }
 }
