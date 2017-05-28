@@ -32,4 +32,10 @@
     <string name="introduction_interest_description">Want a film recommendation related to writers you like? Interested by more complex and composite recommendations based on your deepest interests.</string>
     <string name="introduction_recommend">Understand a recommendation</string>
     <string name="introduction_recommend_description">System gives you recommendations, but also tools to understand why you have these recommendations, because we know that the more important in a recommendation is to know why you get it !</string>
+
+
+    <string name="back"><![CDATA[<]]></string>
+    <string name="rewind"><![CDATA[<<]]></string>
+    <string name="forward"><![CDATA[>>]]></string>
+    <string name="pause">||</string>
 </resources>
