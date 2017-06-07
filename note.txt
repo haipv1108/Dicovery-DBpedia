@@ -1,10 +1,17 @@
-Huong dan setup ung dung Discovery Media
+------------Huong dan setup ung dung Discovery Media-------------
 
-+ Yeu cau ve he thong
+1. Yeu cau ve he thong
 	- Android Studio: version 2.3
 	- SDK version: 25
 
-+ Cac thu vien can thiet (import online)
+2. Code ung dung: sourcecode/PhamVanHai_20121653_FileSourceCode_02062017.zip
+
+3. Cac buoc import project vao Android Studio
+	- B1. Giai nen sourcecode/PhamVanHai_20121653_FileSourceCode_02062017.zip
+	- B2. Mo Android Studio -> File -> Open Project de mo project. 
+	- B3. Doi cho Android Studio cai cac thu vien can thiet (ben duoi) sau do build app
+
+4. Cac thu vien can thiet (import online)
 	- com.android.support:appcompat-v7:25.1.0
 	- com.android.support:design:25.1.0
 	- com.android.support:recyclerview-v7:25.1.0
@@ -17,6 +24,6 @@ Huong dan setup ung dung Discovery Media
 	- com.loopj.android:android-async-http:1.4.9
 	- YouTubeAndroidPlayerApi (offline)
 
-+ Ngoai ra, he thong co su dung webview de thuc hien viec hien thi do thi
+Ngoai ra, he thong co su dung webview de thuc hien viec hien thi do thi (da duoc import vao trong project)
 	- Jquery 3.2
 	- Bootstrap 3.0
